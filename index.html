@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Culture Box</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="#" class="nav__logo" onclick="App.navigate('home')">
+        <span class="nav__logo-icon">&#x1F4E6;</span>
+        <span>Culture Box</span>
+      </a>
+
+      <ul class="nav__links" id="navLinks">
+        <li><a href="#" class="nav__link active" data-page="home" data-i18n="nav.home" onclick="App.navigate('home')">홈</a></li>
+        <li><a href="#" class="nav__link" data-page="explore" data-i18n="nav.explore" onclick="App.navigate('explore')">박스 탐색</a></li>
+        <li><a href="#" class="nav__link" data-page="create" data-i18n="nav.pack" onclick="App.navigate('create')">박스 만들기</a></li>
+        <li><a href="#" class="nav__link" data-page="myboxes" data-i18n="nav.myboxes" onclick="App.navigate('myboxes')">내 박스</a></li>
+        <li><a href="#" class="nav__link" data-page="admin" data-i18n="nav.admin" onclick="App.navigate('admin')">관리</a></li>
+      </ul>
+
+      <div class="nav__actions">
+        <button class="nav__lang-btn" id="langToggle" onclick="App.toggleLangMenu()">
+          <span id="langCurrent">한국어</span>
+          <div class="nav__lang-dropdown" id="langDropdown"></div>
+        </button>
+        <button class="btn btn--primary btn--sm" id="loginBtn" data-i18n="nav.login" onclick="App.showLogin()">로그인</button>
+        <button class="btn btn--ghost btn--sm hidden" id="logoutBtn" data-i18n="nav.logout" onclick="App.logout()">로그아웃</button>
+        <button class="nav__mobile-toggle" id="mobileToggle" onclick="App.toggleMobileNav()">&#9776;</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- ========== HOME PAGE ========== -->
+    <div class="page active" id="page-home">
+      <!-- Hero -->
+      <section class="hero">
+        <div class="container">
+          <h1 class="hero__title" data-i18n="landing.title">Digital Culture Box</h1>
+          <p class="hero__subtitle" data-i18n="landing.subtitle">문화를 상자에 담아, 세계로 보내보세요</p>
+          <p class="hero__desc" data-i18n="landing.desc">우리 학교의 이야기를 상자에 담아 교류학교에 보내고,
+상대 학교의 문화 상자를 열어보는 특별한 경험</p>
+          <div class="hero__actions">
+            <button class="btn btn--primary btn--lg" onclick="App.navigate('explore')" data-i18n="landing.cta.explore">박스 구경하기</button>
+            <button class="btn btn--accent btn--lg" onclick="App.navigate('create')" data-i18n="landing.cta.create">박스 만들기</button>
+          </div>
+          <div class="hero__stats">
+            <div class="hero__stat">
+              <div class="hero__stat-number" id="statSchools">4</div>
+              <div class="hero__stat-label" data-i18n="landing.stats.schools">참여 학교</div>
+            </div>
+            <div class="hero__stat">
+              <div class="hero__stat-number" id="statBoxes">12</div>
+              <div class="hero__stat-label" data-i18n="landing.stats.boxes">교환된 박스</div>
+            </div>
+            <div class="hero__stat">
+              <div class="hero__stat-number" id="statItems">87</div>
+              <div class="hero__stat-label" data-i18n="landing.stats.items">담긴 아이템</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section class="how-section">
+        <div class="container">
+          <h2 class="section-title" data-i18n="how.title">어떻게 사용하나요?</h2>
+          <div class="how-steps">
+            <div class="how-step">
+              <div class="how-step__number">1</div>
+              <div class="how-step__icon">&#x1F4E6;</div>
+              <h3 class="how-step__title" data-i18n="how.step1.title">상자 만들기</h3>
+              <p class="how-step__desc" data-i18n="how.step1.desc">우리 학교와 문화를 소개할 상자를 만들어요</p>
+            </div>
+            <div class="how-step">
+              <div class="how-step__number">2</div>
+              <div class="how-step__icon">&#x1F381;</div>
+              <h3 class="how-step__title" data-i18n="how.step2.title">아이템 담기</h3>
+              <p class="how-step__desc" data-i18n="how.step2.desc">사진, 영상, 글, 링크 등 다양한 내용물을 담아요</p>
+            </div>
+            <div class="how-step">
+              <div class="how-step__number">3</div>
+              <div class="how-step__icon">&#x2709;&#xFE0F;</div>
+              <h3 class="how-step__title" data-i18n="how.step3.title">포장 & 발송</h3>
+              <p class="how-step__desc" data-i18n="how.step3.desc">라벨을 붙이고 교류학교로 보내요</p>
+            </div>
+            <div class="how-step">
+              <div class="how-step__number">4</div>
+              <div class="how-step__icon">&#x1F389;</div>
+              <h3 class="how-step__title" data-i18n="how.step4.title">개봉 & 소통</h3>
+              <p class="how-step__desc" data-i18n="how.step4.desc">도착한 상자를 열어보고 서로 이야기를 나눠요</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Boxes Preview -->
+      <section class="container" style="padding-bottom: 64px;">
+        <h2 class="section-title">&#x1F30D; Recent Culture Boxes</h2>
+        <div class="box-grid" id="recentBoxes"></div>
+      </section>
+    </div>
+
+    <!-- ========== EXPLORE PAGE ========== -->
+    <div class="page" id="page-explore">
+      <div class="container">
+        <div class="page-header">
+          <h1 class="page-header__title" data-i18n="nav.explore">박스 탐색</h1>
+          <div class="page-header__actions">
+            <input class="form-input" style="width:220px" data-i18n-placeholder="common.search" placeholder="검색" id="exploreSearch" oninput="App.filterBoxes()">
+          </div>
+        </div>
+        <div class="filter-bar" id="exploreFilters">
+          <button class="filter-chip active" data-filter="all" data-i18n="common.all" onclick="App.setFilter('all')">전체</button>
+          <button class="filter-chip" data-filter="arrived" data-i18n="status.arrived" onclick="App.setFilter('arrived')">도착!</button>
+          <button class="filter-chip" data-filter="sent" data-i18n="status.sent" onclick="App.setFilter('sent')">발송됨</button>
+          <button class="filter-chip" data-filter="opened" data-i18n="status.opened" onclick="App.setFilter('opened')">개봉됨</button>
+        </div>
+        <div class="box-grid" id="exploreGrid"></div>
+      </div>
+    </div>
+
+    <!-- ========== BOX DETAIL PAGE ========== -->
+    <div class="page" id="page-boxdetail">
+      <div class="container">
+        <!-- Unboxing experience -->
+        <div id="unboxingView" class="unboxing">
+          <div class="unboxing__box-wrapper" id="unboxClickArea" onclick="App.startUnboxing()">
+            <div class="unboxing__box-front">
+              <div class="unboxing__box-tape"></div>
+              <div class="unboxing__box-tape unboxing__box-tape--h"></div>
+              <div class="unboxing__box-label">
+                <div class="unboxing__box-label-from" id="unboxFrom"></div>
+                <div class="unboxing__box-label-school" id="unboxSchool"></div>
+              </div>
+            </div>
+          </div>
+          <p class="unboxing__prompt" data-i18n="unbox.tap" id="unboxPrompt">상자를 탭하여 개봉하세요!</p>
+        </div>
+
+        <!-- Box detail (shown after unboxing) -->
+        <div id="boxDetailView" class="hidden">
+          <div class="box-detail-header">
+            <div class="box-detail-header__cover" id="boxDetailCover"></div>
+            <div class="box-detail-header__info">
+              <h1 class="box-detail-header__title" id="boxDetailTitle"></h1>
+              <p class="box-detail-header__desc" id="boxDetailDesc"></p>
+              <div class="box-detail-header__meta" id="boxDetailMeta"></div>
+            </div>
+          </div>
+
+          <!-- Tabs: Items / Messages -->
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="items" onclick="App.switchTab('items')">&#x1F4E6; Items</button>
+            <button class="tab-btn" data-tab="messages" onclick="App.switchTab('messages')">&#x1F4AC; Messages</button>
+          </div>
+
+          <div class="tab-content active" id="tab-items">
+            <div class="items-grid" id="itemsGrid"></div>
+          </div>
+
+          <div class="tab-content" id="tab-messages">
+            <div class="message-board">
+              <div class="message-list" id="messageList"></div>
+              <div class="message-input-area">
+                <input type="text" id="messageInput" data-i18n-placeholder="msg.placeholder" placeholder="메시지를 남겨주세요...">
+                <button class="btn btn--primary btn--sm" data-i18n="msg.send" onclick="App.sendMessage()">보내기</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== CREATE BOX PAGE ========== -->
+    <div class="page" id="page-create">
+      <div class="create-flow">
+        <h1 class="page-header__title" style="text-align:center; margin-bottom:32px;" data-i18n="create.title">새 컬쳐 박스 만들기</h1>
+
+        <!-- Stepper -->
+        <div class="create-flow__stepper" id="createStepper">
+          <div class="stepper__step active" data-step="1">
+            <div class="stepper__circle">1</div>
+            <span class="stepper__label" data-i18n="create.step1">기본 정보</span>
+          </div>
+          <div class="stepper__line"></div>
+          <div class="stepper__step" data-step="2">
+            <div class="stepper__circle">2</div>
+            <span class="stepper__label" data-i18n="create.step2">아이템 담기</span>
+          </div>
+          <div class="stepper__line"></div>
+          <div class="stepper__step" data-step="3">
+            <div class="stepper__circle">3</div>
+            <span class="stepper__label" data-i18n="create.step3">포장하기</span>
+          </div>
+          <div class="stepper__line"></div>
+          <div class="stepper__step" data-step="4">
+            <div class="stepper__circle">4</div>
+            <span class="stepper__label" data-i18n="create.step4">발송하기</span>
+          </div>
+        </div>
+
+        <!-- Step 1: Basic Info -->
+        <div class="create-panel active" id="createStep1">
+          <div class="form-group">
+            <label class="form-label" data-i18n="create.boxname">상자 이름</label>
+            <input class="form-input" id="boxNameInput" data-i18n-placeholder="create.boxname.placeholder" placeholder="예: 우리 학교 급식 대탐험">
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="create.desc">상자 설명</label>
+            <textarea class="form-textarea" id="boxDescInput" data-i18n-placeholder="create.desc.placeholder" placeholder="이 상자에는 어떤 것들이 담겨 있나요?"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="create.from">보내는 학교</label>
+            <select class="form-select" id="boxFromSchool"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="create.to">받는 학교</label>
+            <select class="form-select" id="boxToSchool"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="create.cover">커버 이미지</label>
+            <div class="file-upload" id="coverUpload">
+              <div class="file-upload__icon">&#x1F5BC;&#xFE0F;</div>
+              <div class="file-upload__text">Click or drag to upload</div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:12px;">
+            <button class="btn btn--primary" onclick="App.createStep(2)" data-i18n="create.next">다음</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Add Items -->
+        <div class="create-panel" id="createStep2">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 data-i18n="item.add">아이템 추가</h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('text')">&#x1F4DD; <span data-i18n="item.text">텍스트</span></button>
+              <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('image')">&#x1F5BC;&#xFE0F; <span data-i18n="item.image">이미지</span></button>
+              <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('video')">&#x1F3AC; <span data-i18n="item.video">영상</span></button>
+              <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('youtube')">&#x25B6;&#xFE0F; <span data-i18n="item.youtube">유튜브</span></button>
+              <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('link')">&#x1F517; <span data-i18n="item.link">링크</span></button>
+              <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('pdf')">&#x1F4C4; <span data-i18n="item.pdf">PDF</span></button>
+            </div>
+          </div>
+
+          <!-- Item form area -->
+          <div id="itemFormArea" class="hidden" style="background:var(--color-bg);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+            <div class="form-group">
+              <label class="form-label" data-i18n="item.title">제목</label>
+              <input class="form-input" id="itemTitleInput" data-i18n-placeholder="item.title.placeholder" placeholder="아이템 제목을 입력하세요">
+            </div>
+            <div class="form-group" id="itemContentGroup">
+              <label class="form-label" data-i18n="item.content">내용</label>
+              <textarea class="form-textarea" id="itemContentInput" data-i18n-placeholder="item.content.placeholder" placeholder="내용을 입력하세요..."></textarea>
+            </div>
+            <div class="form-group hidden" id="itemUrlGroup">
+              <label class="form-label" data-i18n="item.url">URL</label>
+              <input class="form-input" id="itemUrlInput" data-i18n-placeholder="item.url.placeholder" placeholder="https://...">
+            </div>
+            <div class="form-group hidden" id="itemFileGroup">
+              <label class="form-label" data-i18n="item.upload">파일 업로드</label>
+              <div class="file-upload" id="itemFileUpload">
+                <div class="file-upload__icon">&#x1F4CE;</div>
+                <div class="file-upload__text">Click or drag to upload</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+              <button class="btn btn--ghost btn--sm" data-i18n="common.cancel" onclick="App.cancelItemForm()">취소</button>
+              <button class="btn btn--primary btn--sm" data-i18n="common.save" onclick="App.saveItem()">저장</button>
+            </div>
+          </div>
+
+          <!-- Items list -->
+          <div id="createItemsList"></div>
+
+          <div style="display:flex; justify-content:space-between; margin-top:24px;">
+            <button class="btn btn--secondary" onclick="App.createStep(1)" data-i18n="create.prev">이전</button>
+            <button class="btn btn--primary" onclick="App.createStep(3)" data-i18n="create.next">다음</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Packing Animation -->
+        <div class="create-panel" id="createStep3">
+          <div style="text-align:center;">
+            <div class="packing-scene" id="packingScene">
+              <div class="packing-box__lid"></div>
+              <div class="packing-box">
+                <div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:48px;opacity:0.5;">&#x1F4E6;</div>
+              </div>
+              <div class="packing-tape"></div>
+              <div class="packing-label" id="packingLabel">
+                <div style="font-size:10px;color:var(--color-text-tertiary);">TO:</div>
+                <div style="font-weight:700;font-size:12px;" id="packingLabelTo"></div>
+              </div>
+            </div>
+            <div style="margin-top:24px;">
+              <button class="btn btn--accent" onclick="App.runPackingAnimation()">&#x1F4E6; Pack this box!</button>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:32px;">
+            <button class="btn btn--secondary" onclick="App.createStep(2)" data-i18n="create.prev">이전</button>
+            <button class="btn btn--primary" onclick="App.createStep(4)" data-i18n="create.next">다음</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Send -->
+        <div class="create-panel" id="createStep4">
+          <div class="sending-scene">
+            <div class="sending-box-anim">&#x1F4E6;</div>
+            <div class="sending-progress">
+              <div class="sending-progress__bar">
+                <div class="sending-progress__fill" id="sendProgressFill"></div>
+              </div>
+              <div class="sending-progress__text" id="sendProgressText"></div>
+            </div>
+            <div style="margin-top:32px;">
+              <button class="btn btn--primary btn--lg" id="sendBoxBtn" onclick="App.sendBox()" data-i18n="create.send">발송하기</button>
+            </div>
+            <div style="margin-top:12px;">
+              <button class="btn btn--ghost" onclick="App.createStep(3)" data-i18n="create.prev">이전</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== MY BOXES PAGE ========== -->
+    <div class="page" id="page-myboxes">
+      <div class="container">
+        <div class="page-header">
+          <h1 class="page-header__title" data-i18n="nav.myboxes">내 박스</h1>
+          <button class="btn btn--primary btn--sm" onclick="App.navigate('create')" data-i18n="nav.pack">박스 만들기</button>
+        </div>
+        <div class="box-grid" id="myBoxesGrid"></div>
+      </div>
+    </div>
+
+    <!-- ========== ADMIN PAGE ========== -->
+    <div class="page" id="page-admin">
+      <div class="container">
+        <div class="page-header">
+          <h1 class="page-header__title" data-i18n="admin.title">관리 패널</h1>
+        </div>
+        <div class="admin-layout">
+          <aside class="admin-sidebar">
+            <ul class="admin-sidebar__nav">
+              <li class="admin-sidebar__item active" onclick="App.adminTab('schools')">&#x1F3EB; <span data-i18n="admin.schools">학교 관리</span></li>
+              <li class="admin-sidebar__item" onclick="App.adminTab('boxes')">&#x1F4E6; <span data-i18n="admin.boxes">박스 관리</span></li>
+              <li class="admin-sidebar__item" onclick="App.adminTab('users')">&#x1F464; <span data-i18n="admin.users">사용자 관리</span></li>
+              <li class="admin-sidebar__item" onclick="App.adminTab('messages')">&#x1F4AC; <span data-i18n="admin.messages">메시지 관리</span></li>
+            </ul>
+          </aside>
+          <div class="admin-content" id="adminContent">
+            <!-- Dynamic admin content -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Login Modal -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal">
+      <h2 class="modal__title" data-i18n="login.title">로그인</h2>
+      <div class="form-group">
+        <label class="form-label" data-i18n="login.name">이름</label>
+        <input class="form-input" id="loginName" placeholder="">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="login.school">학교</label>
+        <select class="form-select" id="loginSchool"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="login.role">역할</label>
+        <select class="form-select" id="loginRole">
+          <option value="student" data-i18n="login.student">학생</option>
+          <option value="teacher" data-i18n="login.teacher">교사</option>
+        </select>
+      </div>
+      <button class="btn btn--primary" style="width:100%" onclick="App.login()" data-i18n="login.submit">시작하기</button>
+      <button class="btn btn--ghost" style="width:100%;margin-top:8px" onclick="App.hideLogin()" data-i18n="common.cancel">취소</button>
+    </div>
+  </div>
+
+  <!-- Item Detail Modal -->
+  <div class="modal-overlay" id="itemModal">
+    <div class="modal item-detail" style="max-width:640px;">
+      <button class="modal__close" onclick="App.closeItemModal()">&times;</button>
+      <div id="itemModalContent"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

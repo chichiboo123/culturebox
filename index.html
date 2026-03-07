@@ -19,8 +19,8 @@
 
       <ul class="nav__links" id="navLinks">
         <li><a href="#" class="nav__link active" data-page="home" onclick="App.navigate('home')" data-i18n="nav.home">홈</a></li>
-        <li id="navExploreItem"><a href="#" class="nav__link" data-page="explore" onclick="App.navigate('explore')" data-i18n="nav.explore">박스 탐색</a></li>
         <li id="navCreateItem"><a href="#" class="nav__link" data-page="create" onclick="App.navigate('create')" data-i18n="nav.create">박스 만들기</a></li>
+        <li id="navExploreItem"><a href="#" class="nav__link" data-page="explore" onclick="App.navigate('explore')" data-i18n="nav.explore">박스 보관소</a></li>
         <li id="navMyboxesItem"><a href="#" class="nav__link" data-page="myboxes" onclick="App.navigate('myboxes')" data-i18n="nav.myboxes">내 박스</a></li>
         <li id="navAdminItem" class="hidden"><a href="#" class="nav__link" data-page="admin" onclick="App.navigate('admin')" data-i18n="nav.admin">관리</a></li>
       </ul>
@@ -92,16 +92,7 @@
           <p class="hero__desc" data-i18n="landing.desc">우리 학교의 이야기를 상자에 담아 교류학교에 보내고,<br>상대 학교의 문화 상자를 열어보는 특별한 경험</p>
 
           <!-- Login prompt (shown when not logged in) -->
-          <div id="homeLoginPrompt">
-            <div class="login-prompt-box">
-              <div class="login-prompt-box__icon">🔑</div>
-              <div class="login-prompt-box__text">
-                <strong data-i18n="hero.login.title">로그인하고 시작하기</strong>
-                <p data-i18n="hero.login.desc">내 학교의 문화 박스를 구경하고, 만들고, 소통해요!</p>
-              </div>
-              <button class="btn btn--primary btn--lg" onclick="App.showLogin()" data-i18n="hero.login.btn">지금 로그인하기 →</button>
-            </div>
-          </div>
+          <div id="homeLoginPrompt"></div>
 
           <!-- Content shown when logged in -->
           <div id="homeLoggedContent" class="hidden">
@@ -175,7 +166,7 @@
     <div class="page" id="page-explore">
       <div class="container">
         <div class="page-header">
-          <h1 class="page-header__title" data-i18n="nav.explore">박스 탐색</h1>
+          <h1 class="page-header__title" data-i18n="nav.explore">박스 보관소</h1>
           <input class="form-input" style="width:200px;padding:10px 14px;" data-i18n-placeholder="explore.search" placeholder="검색..." id="exploreSearch" oninput="App.filterBoxes()">
         </div>
         <div class="school-banner" id="exploreBanner"></div>
@@ -246,16 +237,18 @@
           <div class="tab-content" id="tab-messages">
             <!-- Social Compose -->
             <div class="social-compose" id="socialCompose">
-              <div class="social-type-bar">
-                <button class="social-type-btn active" data-type="text" onclick="App.setSocialType('text')" data-i18n="social.type.text">텍스트</button>
-                <button class="social-type-btn" data-type="image" onclick="App.setSocialType('image')" data-i18n="social.type.image">이미지</button>
-                <button class="social-type-btn" data-type="youtube" onclick="App.setSocialType('youtube')" data-i18n="social.type.youtube">유튜브</button>
+              <div class="social-compose__name-row">
+                <span style="font-size:12px;font-weight:600;color:var(--color-text-tertiary);" data-i18n="compose.name.label">이름</span>
+                <input class="social-compose__name-input" id="socialNameInput" data-i18n-placeholder="compose.name.placeholder" placeholder="실명 입력">
               </div>
               <textarea class="social-compose__textarea" id="socialTextarea" rows="3" data-i18n-placeholder="social.compose.placeholder" placeholder="우리 학교 이야기를 나눠요..."></textarea>
-              <div class="social-compose__media hidden" id="socialMediaInput">
-                <input class="form-input" id="socialMediaUrl" data-i18n-placeholder="social.media.placeholder" placeholder="이미지 URL 또는 YouTube URL">
+              <div class="social-compose__attach-row">
+                <span class="social-compose__attach-label">📎</span>
+                <input class="social-compose__attach-input" id="socialMediaUrl" data-i18n-placeholder="social.attach.placeholder" placeholder="이미지·YouTube·파일 URL (선택)">
               </div>
+              <div class="social-compose__media-preview hidden" id="socialMediaPreview"></div>
               <div class="social-compose__footer">
+                <span style="font-size:11px;color:var(--color-text-tertiary);" data-i18n="social.name.label">실명으로 작성됩니다</span>
                 <button class="btn btn--primary btn--sm" onclick="App.postSocialMessage()" data-i18n="social.post.btn">게시하기</button>
               </div>
             </div>

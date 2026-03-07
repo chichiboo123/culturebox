@@ -517,6 +517,8 @@ const App = {
     this.renderItems(items);
     this.loadSocialFeed(box.id);
     this.switchTab('items');
+    // Pre-fill name in social compose
+    setTimeout(() => this.prefillSocialName(), 100);
   },
 
   // ===== Items with comment counts =====
@@ -608,7 +610,8 @@ const App = {
       <div id="itemTabComments" class="item-tab-panel" style="display:none;">
         <div id="itemCommentsList"></div>
         <div class="item-comment-compose">
-          <input class="form-input" id="itemCommentInput" placeholder="${I18N.t('item.comment.placeholder')}" style="font-size:14px;padding:10px 14px;"
+          <input class="item-comment-name-input" id="itemCommentName" placeholder="${I18N.t('compose.name.placeholder')}" value="${DataStore.currentUser ? DataStore.currentUser.name : (this.isAdmin ? 'Admin' : '')}">
+          <input class="form-input" id="itemCommentInput" placeholder="${I18N.t('item.comment.placeholder')}" style="font-size:14px;padding:10px 14px;flex:1;"
                  onkeydown="if(event.key==='Enter')App.postItemComment('${itemId}')">
           <button class="btn btn--primary btn--sm" onclick="App.postItemComment('${itemId}')">💬</button>
         </div>
@@ -648,6 +651,7 @@ const App = {
 
     const parents = comments.filter(c => !c.parent_id);
     const replies = comments.filter(c => c.parent_id);
+    const userName = this.isAdmin ? 'Admin' : (DataStore.currentUser ? DataStore.currentUser.name : '');
 
     list.innerHTML = parents.map(c => {
       const childReplies = replies.filter(r => r.parent_id === c.id);
@@ -656,9 +660,11 @@ const App = {
         const rs = DataStore.getSchool(r.user_school);
         return `<div class="item-comment-reply">
           <div class="item-comment-reply__avatar" style="background:${gc(r.user_name)}">${gi(r.user_name)}</div>
-          <div>
+          <div style="flex:1;">
             <div class="item-comment__name">${this.escapeHtml(r.user_name)} <span style="font-weight:400;color:var(--color-text-tertiary);font-size:11px;">${rs ? DataStore.getSchoolName(rs.id) : ''}</span></div>
             <div class="item-comment__text">${this.escapeHtml(r.content)}</div>
+            <button class="item-comment__translate" onclick="App.toggleTranslation('ic-${r.id}','${this.escapeHtml(r.content).replace(/'/g,"\\'")}',this)">🌐</button>
+            <div id="translated-ic-${r.id}" class="item-comment__translated" style="display:none;"></div>
           </div>
         </div>`;
       }).join('');
@@ -668,8 +674,13 @@ const App = {
         <div class="item-comment__body">
           <div class="item-comment__name">${this.escapeHtml(c.user_name)} <span style="font-weight:400;color:var(--color-text-tertiary);font-size:11px;">${school ? DataStore.getSchoolName(school.id) : ''} · ${this.formatDate(c.created_at)}</span></div>
           <div class="item-comment__text">${this.escapeHtml(c.content)}</div>
-          <button class="item-comment__reply-btn" onclick="App.toggleItemReply('${c.id}')">↩ ${I18N.t('msg.reply')}</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="item-comment__reply-btn" onclick="App.toggleItemReply('${c.id}')">↩ ${I18N.t('msg.reply')}</button>
+            <button class="item-comment__translate" onclick="App.toggleTranslation('ic-${c.id}','${this.escapeHtml(c.content).replace(/'/g,"\\'")}',this)">🌐</button>
+          </div>
+          <div id="translated-ic-${c.id}" class="item-comment__translated" style="display:none;"></div>
           <div id="item-reply-${c.id}" class="item-comment-reply-input" style="display:none;">
+            <input class="item-comment-name-input" id="item-reply-name-${c.id}" placeholder="${I18N.t('compose.name.placeholder')}" value="${this.escapeHtml(userName)}">
             <input class="form-input" id="item-reply-input-${c.id}" placeholder="${I18N.t('social.reply.placeholder')}" style="font-size:13px;padding:8px 12px;"
                    onkeydown="if(event.key==='Enter')App.postItemReply('${itemId}','${c.id}')">
             <button class="btn btn--primary btn--sm" onclick="App.postItemReply('${itemId}','${c.id}')">↩</button>
@@ -688,13 +699,15 @@ const App = {
   postItemComment(itemId) {
     if (!DataStore.currentUser && !this.isAdmin) { this.toast('로그인이 필요합니다.'); return; }
     const input = document.getElementById('itemCommentInput');
+    const nameInput = document.getElementById('itemCommentName');
     const text = input.value.trim();
+    const name = (nameInput ? nameInput.value.trim() : '') || (DataStore.currentUser ? DataStore.currentUser.name : 'Admin');
     if (!text) return;
     const user = DataStore.currentUser;
     DataStore.itemComments.push({
       id: DataStore.generateId('ic'),
       item_id: itemId,
-      user_name: user ? user.name : 'Admin',
+      user_name: name,
       user_school: user ? user.school_id : '',
       content: text,
       parent_id: null,
@@ -708,13 +721,15 @@ const App = {
   postItemReply(itemId, parentId) {
     if (!DataStore.currentUser && !this.isAdmin) { this.toast('로그인이 필요합니다.'); return; }
     const input = document.getElementById('item-reply-input-' + parentId);
+    const nameInput = document.getElementById('item-reply-name-' + parentId);
     const text = input.value.trim();
+    const name = (nameInput ? nameInput.value.trim() : '') || (DataStore.currentUser ? DataStore.currentUser.name : 'Admin');
     if (!text) return;
     const user = DataStore.currentUser;
     DataStore.itemComments.push({
       id: DataStore.generateId('ic'),
       item_id: itemId,
-      user_name: user ? user.name : 'Admin',
+      user_name: name,
       user_school: user ? user.school_id : '',
       content: text,
       parent_id: parentId,
@@ -741,11 +756,23 @@ const App = {
   },
 
   // ===== Social Feed (Instagram-like) =====
-  setSocialType(type) {
-    this.currentSocialType = type;
-    document.querySelectorAll('.social-type-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.type === type));
-    const mediaInput = document.getElementById('socialMediaInput');
-    if (mediaInput) mediaInput.classList.toggle('hidden', type === 'text');
+  // Detect media type from URL
+  detectMediaType(url) {
+    if (!url) return 'text';
+    const u = url.toLowerCase();
+    if (u.includes('youtube.com/') || u.includes('youtu.be/')) return 'youtube';
+    if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/.test(u)) return 'image';
+    if (/\.(mp4|webm|ogg|mov)(\?|$)/.test(u)) return 'video';
+    return 'link';
+  },
+
+  // Prefill social name input from logged-in user
+  prefillSocialName() {
+    const inp = document.getElementById('socialNameInput');
+    if (!inp) return;
+    const user = DataStore.currentUser;
+    if (user && !inp.value) inp.value = user.name;
+    else if (this.isAdmin && !inp.value) inp.value = 'Admin';
   },
 
   async loadSocialFeed(boxId) {
@@ -770,12 +797,16 @@ const App = {
       const postReplies = replies.filter(r => r.parent_id === post.id);
 
       let mediaHtml = '';
-      const ptype = post.type || 'text';
-      if (ptype === 'image' && post.media_url) {
+      const ptype = post.type || (post.media_url ? this.detectMediaType(post.media_url) : 'text');
+      if ((ptype === 'image') && post.media_url) {
         mediaHtml = `<div class="social-post__media"><img src="${this.escapeHtml(post.media_url)}" alt="" loading="lazy"></div>`;
       } else if (ptype === 'youtube' && post.media_url) {
         const vid = this.extractYouTubeId(post.media_url);
         if (vid) mediaHtml = `<div class="social-post__media"><iframe src="https://www.youtube.com/embed/${vid}" allowfullscreen></iframe></div>`;
+      } else if (ptype === 'video' && post.media_url) {
+        mediaHtml = `<div class="social-post__media"><video src="${this.escapeHtml(post.media_url)}" controls style="width:100%;"></video></div>`;
+      } else if (ptype === 'link' && post.media_url) {
+        mediaHtml = `<div style="padding:0 var(--space-lg) var(--space-sm);"><a href="${this.escapeHtml(post.media_url)}" target="_blank" rel="noopener" class="btn btn--secondary btn--sm" style="display:inline-flex;">🔗 ${this.escapeHtml(post.media_url).substring(0,50)}${post.media_url.length > 50 ? '…' : ''}</a></div>`;
       }
 
       const repliesHtml = postReplies.map(r => {
@@ -786,10 +817,14 @@ const App = {
             <span class="social-comment__name">${this.escapeHtml(r.user_name)}</span>
             <span class="social-comment__school">${rs ? DataStore.getSchoolName(rs.id) : ''}</span>
             <div class="social-comment__text">${this.escapeHtml(r.content)}</div>
+            <button class="item-comment__translate" onclick="App.toggleTranslation('sc-${r.id}','${this.escapeHtml(r.content).replace(/'/g,"\\'")}',this)">🌐</button>
+            <div id="translated-sc-${r.id}" class="item-comment__translated" style="display:none;"></div>
           </div>
         </div>`;
       }).join('');
 
+      const userName = this.isAdmin ? 'Admin' : (DataStore.currentUser ? DataStore.currentUser.name : '');
+      const postContentEsc = post.content.replace(/'/g,"\\'").replace(/\n/g,' ');
       return `<div class="social-post" id="sp-${post.id}">
         <div class="social-post__header">
           <div class="social-post__avatar" style="background:${gc(post.user_name)}">${gi(post.user_name)}</div>
@@ -799,14 +834,17 @@ const App = {
           </div>
         </div>
         <div class="social-post__content">${this.escapeHtml(post.content)}</div>
+        <div id="translated-${post.id}" class="social-post__translated" style="display:none;"></div>
         ${mediaHtml}
         <div class="social-post__actions">
           <button class="social-action-btn" onclick="App.likePost('${post.id}')">❤️ ${I18N.t('social.like')}</button>
           <button class="social-action-btn" onclick="App.toggleComments('${post.id}')">💬 ${postReplies.length} ${I18N.t('social.comment.count')}</button>
+          <button class="social-action-btn translate-btn" id="translate-btn-${post.id}" onclick="App.toggleTranslation('${post.id}','${postContentEsc}',this)">🌐 ${I18N.t('translate.btn')}</button>
         </div>
         <div class="social-comments" id="comments-${post.id}" style="display:none;">
           ${repliesHtml}
           <div class="social-comment-input">
+            <input class="social-comment-name-input" id="comment-name-${post.id}" placeholder="${I18N.t('compose.name.placeholder')}" value="${this.escapeHtml(userName)}">
             <input class="social-comment-input__field" id="comment-input-${post.id}"
                    placeholder="${I18N.t('social.comment.placeholder')}"
                    onkeydown="if(event.key==='Enter')App.postComment('${post.id}')">
@@ -834,16 +872,17 @@ const App = {
   async postComment(postId) {
     if (!DataStore.currentUser && !this.isAdmin) { this.showLogin(); return; }
     const input = document.getElementById('comment-input-' + postId);
+    const nameInput = document.getElementById('comment-name-' + postId);
     const text = input.value.trim();
+    const name = (nameInput ? nameInput.value.trim() : '') || (DataStore.currentUser ? DataStore.currentUser.name : 'Admin');
     if (!text || !this.currentBox) return;
 
-    const user = DataStore.currentUser;
     await API.addMessage({
       box_id: this.currentBox.id,
       content: text,
       parent_id: postId,
       type: 'text',
-      user_name_override: user ? user.name : 'Admin'
+      user_name_override: name
     });
     input.value = '';
     this.loadSocialFeed(this.currentBox.id);
@@ -852,30 +891,66 @@ const App = {
   async postSocialMessage() {
     if (!DataStore.currentUser && !this.isAdmin) { this.showLogin(); return; }
     const textarea = document.getElementById('socialTextarea');
-    const mediaInput = document.getElementById('socialMediaInput');
+    const mediaUrlInput = document.getElementById('socialMediaUrl');
+    const nameInput = document.getElementById('socialNameInput');
     const text = textarea ? textarea.value.trim() : '';
+    const name = (nameInput ? nameInput.value.trim() : '') || (DataStore.currentUser ? DataStore.currentUser.name : 'Admin');
     if (!text || !this.currentBox) return;
 
-    const user = DataStore.currentUser;
-    const media = mediaInput ? mediaInput.value.trim() : '';
-    const msgType = this.currentSocialType || 'text';
+    const mediaUrl = mediaUrlInput ? mediaUrlInput.value.trim() : '';
+    const msgType = this.detectMediaType(mediaUrl);
 
     await API.addMessage({
       box_id: this.currentBox.id,
       content: text,
       parent_id: null,
       type: msgType,
-      media_url: media,
-      user_name_override: user ? user.name : 'Admin'
+      media_url: mediaUrl,
+      user_name_override: name
     });
     textarea.value = '';
-    if (mediaInput) mediaInput.value = '';
-    this.setSocialType('text');
+    if (mediaUrlInput) mediaUrlInput.value = '';
+    const preview = document.getElementById('socialMediaPreview');
+    if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
     this.loadSocialFeed(this.currentBox.id);
     this.toast('📢 ' + I18N.t('social.post.btn') + '!');
   },
 
   reactToMessage(id, type) { this.toast(`${I18N.t('react.' + type)}!`); },
+
+  // ===== Translation =====
+  async translateText(text, targetLang) {
+    try {
+      const gasUrl = API.GAS_URL;
+      if (!gasUrl || gasUrl.includes('YOUR_')) return null;
+      const url = `${gasUrl}?action=translate&text=${encodeURIComponent(text)}&to=${targetLang}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.result || null;
+    } catch(e) { return null; }
+  },
+
+  async toggleTranslation(id, text, btnEl) {
+    const div = document.getElementById('translated-' + id);
+    if (!div) return;
+    if (div.textContent && div.style.display !== 'none') {
+      div.style.display = 'none';
+      btnEl.textContent = '🌐';
+      return;
+    }
+    const currentLang = I18N.getLang();
+    const targetLang = currentLang === 'ko' ? 'en' : currentLang === 'en' ? 'ja' : 'ko';
+    btnEl.textContent = '⏳';
+    const translated = await this.translateText(text, targetLang);
+    if (translated) {
+      div.textContent = translated;
+      div.style.display = 'block';
+      btnEl.textContent = '🌐✕';
+    } else {
+      btnEl.textContent = '🌐';
+      this.toast(I18N.t('translate.unavailable'));
+    }
+  },
 
   // ===== Create Box =====
   initCreateFlow() {

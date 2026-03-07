@@ -56,6 +56,7 @@ const App = {
 
   // ===== Init =====
   async init() {
+    DataStore.loadSaved();
     I18N.init();
     this.loadTheme();
     this.buildLangMenu();
@@ -555,13 +556,24 @@ const App = {
     }).join('');
   },
 
-  currentItemLang: 'ko',
+  currentItemLang: 'orig',
 
   // Render the translatable content body of an item
+  // lang: 'orig' = show original content as-is
+  //       'ko'/'en'/'ja' = show from trans_ko/trans_en/trans_ja Sheets columns (fallback: fetch via GAS)
   renderItemContentBody(item, lang) {
-    const title = (lang === 'en' ? item.title_en : lang === 'ja' ? item.title_ja : null) || item.title || '';
-    const text  = (lang === 'en' ? item.content_en : lang === 'ja' ? item.content_ja : null) || (lang === 'ko' ? item.content : null) || '';
-    const needsFetch = (lang !== 'ko') && !(lang === 'en' ? item.content_en : item.content_ja);
+    let title, text, needsFetch;
+    if (lang === 'orig') {
+      title = item.title || '';
+      text = item.content || '';
+      needsFetch = false;
+    } else {
+      const transKey = `trans_${lang}`;
+      title = item.title || '';
+      text = item[transKey] || '';
+      needsFetch = !text;
+    }
+
     const fetchBtn = needsFetch
       ? `<button class="btn btn--secondary btn--sm" style="margin-top:12px;" onclick="App.fetchItemTranslation('${item.id}','${lang}')">🌐 ${I18N.t('translate.btn')}</button>`
       : '';
@@ -585,10 +597,16 @@ const App = {
       case 'video':
         if (item.file_url) mediaHtml = `<div class="item-detail__media"><video controls src="${this.escapeHtml(item.file_url)}"></video></div>`;
         break;
-      case 'link':
-        mediaHtml = `<div style="margin-bottom:12px;"><a href="${this.escapeHtml(item.file_url)}" target="_blank" rel="noopener" class="btn btn--secondary">🔗 ${this.escapeHtml(item.file_url)}</a></div>`;
+      case 'link': {
+        const ytId = item.file_url ? this.extractYouTubeId(item.file_url) : null;
+        if (ytId) {
+          mediaHtml = `<div class="item-detail__media"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>`;
+        } else if (item.file_url) {
+          mediaHtml = `<div style="margin-bottom:12px;"><a href="${this.escapeHtml(item.file_url)}" target="_blank" rel="noopener" class="btn btn--secondary">🔗 ${this.escapeHtml(item.file_url)}</a></div>`;
+        }
         if (text) mediaHtml += `<div class="item-detail__content">${this.escapeHtml(text)}</div>`;
         break;
+      }
       case 'pdf':
         if (item.file_url) mediaHtml = `<div><a href="${this.escapeHtml(item.file_url)}" target="_blank" rel="noopener" class="btn btn--secondary">📄 PDF</a></div>`;
         break;
@@ -602,12 +620,13 @@ const App = {
     const item = DataStore.items.find(i => i.id === itemId);
     if (!item) return;
     this.currentItemModal = itemId;
-    this.currentItemLang = I18N.getLang() || 'ko';
+    this.currentItemLang = 'orig';
 
     const modal = document.getElementById('itemModal');
     const content = document.getElementById('itemModalContent');
 
     const langs = [
+      { code: 'orig', label: '원본' },
       { code: 'ko', label: '한' },
       { code: 'en', label: 'EN' },
       { code: 'ja', label: '日' },
@@ -648,8 +667,9 @@ const App = {
 
   setItemLang(lang, itemId) {
     this.currentItemLang = lang;
+    const labelMap = { orig: '원본', ko: '한', en: 'EN', ja: '日' };
     document.querySelectorAll('.item-lang-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.textContent === ({ko:'한',en:'EN',ja:'日'}[lang]));
+      btn.classList.toggle('active', btn.textContent === labelMap[lang]);
     });
     const item = DataStore.items.find(i => i.id === itemId);
     const body = document.getElementById('itemContentBody');
@@ -667,7 +687,7 @@ const App = {
     const translated = await this.translateText(srcText, lang);
     btn.disabled = false;
     if (translated) {
-      item[`content_${lang}`] = translated;
+      item[`trans_${lang}`] = translated;
       const body = document.getElementById('itemContentBody');
       if (body) body.innerHTML = this.renderItemContentBody(item, lang);
     } else {
@@ -712,24 +732,40 @@ const App = {
     list.innerHTML = parents.map(c => {
       const childReplies = replies.filter(r => r.parent_id === c.id);
       const school = DataStore.getSchool(c.user_school);
+      const isCommentOwner = this.isAdmin || (userName && userName === c.user_name);
+
       const repliesHtml = childReplies.map(r => {
         const rs = DataStore.getSchool(r.user_school);
-        return `<div class="item-comment-reply">
+        const isReplyOwner = this.isAdmin || (userName && userName === r.user_name);
+        const replyOwnerBtns = isReplyOwner
+          ? `<span class="social-post__owner-actions" style="display:inline-flex;margin-left:6px;">
+              <button class="social-owner-btn" onclick="App.editItemReply('${r.id}','${itemId}')">✏️</button>
+              <button class="social-owner-btn" onclick="App.deleteItemReply('${r.id}','${itemId}')">🗑️</button>
+             </span>`
+          : '';
+        return `<div class="item-comment-reply" id="ic-wrap-${r.id}">
           <div class="item-comment-reply__avatar" style="background:${gc(r.user_name)}">${gi(r.user_name)}</div>
           <div style="flex:1;">
-            <div class="item-comment__name">${this.escapeHtml(r.user_name)} <span style="font-weight:400;color:var(--color-text-tertiary);font-size:11px;">${rs ? DataStore.getSchoolName(rs.id) : ''}</span></div>
-            <div class="item-comment__text">${this.escapeHtml(r.content)}</div>
+            <div class="item-comment__name">${this.escapeHtml(r.user_name)} <span style="font-weight:400;color:var(--color-text-tertiary);font-size:11px;">${rs ? DataStore.getSchoolName(rs.id) : ''}</span>${replyOwnerBtns}</div>
+            <div class="item-comment__text" id="ic-text-${r.id}">${this.escapeHtml(r.content)}</div>
             <button class="item-comment__translate" onclick="App.toggleTranslation('ic-${r.id}','${this.escapeHtml(r.content).replace(/'/g,"\\'")}',this)">🌐</button>
             <div id="translated-ic-${r.id}" class="item-comment__translated" style="display:none;"></div>
           </div>
         </div>`;
       }).join('');
 
-      return `<div class="item-comment">
+      const commentOwnerBtns = isCommentOwner
+        ? `<span class="social-post__owner-actions" style="display:inline-flex;margin-left:6px;">
+            <button class="social-owner-btn" onclick="App.editItemComment('${c.id}','${itemId}')">✏️</button>
+            <button class="social-owner-btn" onclick="App.deleteItemComment('${c.id}','${itemId}')">🗑️</button>
+           </span>`
+        : '';
+
+      return `<div class="item-comment" id="ic-wrap-${c.id}">
         <div class="item-comment__avatar" style="background:${gc(c.user_name)}">${gi(c.user_name)}</div>
         <div class="item-comment__body">
-          <div class="item-comment__name">${this.escapeHtml(c.user_name)} <span style="font-weight:400;color:var(--color-text-tertiary);font-size:11px;">${school ? DataStore.getSchoolName(school.id) : ''} · ${this.formatDate(c.created_at)}</span></div>
-          <div class="item-comment__text">${this.escapeHtml(c.content)}</div>
+          <div class="item-comment__name">${this.escapeHtml(c.user_name)} <span style="font-weight:400;color:var(--color-text-tertiary);font-size:11px;">${school ? DataStore.getSchoolName(school.id) : ''} · ${this.formatDate(c.created_at)}</span>${commentOwnerBtns}</div>
+          <div class="item-comment__text" id="ic-text-${c.id}">${this.escapeHtml(c.content)}</div>
           <div style="display:flex;gap:8px;align-items:center;">
             <button class="item-comment__reply-btn" onclick="App.toggleItemReply('${c.id}')">↩ ${I18N.t('msg.reply')}</button>
             <button class="item-comment__translate" onclick="App.toggleTranslation('ic-${c.id}','${this.escapeHtml(c.content).replace(/'/g,"\\'")}',this)">🌐</button>
@@ -794,6 +830,69 @@ const App = {
     input.value = '';
     this.renderItemComments(itemId);
     this.toast('↩ ' + I18N.t('msg.send') + '!');
+  },
+
+  // ===== Item Comment Edit / Delete =====
+  editItemComment(commentId, itemId) {
+    const c = DataStore.itemComments.find(x => x.id === commentId);
+    if (!c) return;
+    const textEl = document.getElementById('ic-text-' + commentId);
+    if (!textEl) return;
+    textEl.innerHTML = `<div style="display:flex;gap:6px;margin-top:4px;">
+      <textarea class="form-input" id="ic-edit-${commentId}" rows="2" style="font-size:13px;flex:1;">${this.escapeHtml(c.content)}</textarea>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button class="btn btn--primary btn--sm" onclick="App.saveItemCommentEdit('${commentId}','${itemId}')">저장</button>
+        <button class="btn btn--secondary btn--sm" onclick="App.renderItemComments('${itemId}')">취소</button>
+      </div>
+    </div>`;
+  },
+
+  saveItemCommentEdit(commentId, itemId) {
+    const ta = document.getElementById('ic-edit-' + commentId);
+    if (!ta) return;
+    const newText = ta.value.trim();
+    if (!newText) return;
+    const c = DataStore.itemComments.find(x => x.id === commentId);
+    if (c) { c.content = newText; DataStore.save(); }
+    this.renderItemComments(itemId);
+  },
+
+  deleteItemComment(commentId, itemId) {
+    if (!confirm('이 댓글을 삭제할까요?')) return;
+    DataStore.itemComments = DataStore.itemComments.filter(x => x.id !== commentId && x.parent_id !== commentId);
+    DataStore.save();
+    this.renderItemComments(itemId);
+  },
+
+  editItemReply(replyId, itemId) {
+    const r = DataStore.itemComments.find(x => x.id === replyId);
+    if (!r) return;
+    const textEl = document.getElementById('ic-text-' + replyId);
+    if (!textEl) return;
+    textEl.innerHTML = `<div style="display:flex;gap:6px;margin-top:4px;">
+      <textarea class="form-input" id="ic-edit-${replyId}" rows="2" style="font-size:13px;flex:1;">${this.escapeHtml(r.content)}</textarea>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button class="btn btn--primary btn--sm" onclick="App.saveItemReplyEdit('${replyId}','${itemId}')">저장</button>
+        <button class="btn btn--secondary btn--sm" onclick="App.renderItemComments('${itemId}')">취소</button>
+      </div>
+    </div>`;
+  },
+
+  saveItemReplyEdit(replyId, itemId) {
+    const ta = document.getElementById('ic-edit-' + replyId);
+    if (!ta) return;
+    const newText = ta.value.trim();
+    if (!newText) return;
+    const r = DataStore.itemComments.find(x => x.id === replyId);
+    if (r) { r.content = newText; DataStore.save(); }
+    this.renderItemComments(itemId);
+  },
+
+  deleteItemReply(replyId, itemId) {
+    if (!confirm('이 댓글을 삭제할까요?')) return;
+    DataStore.itemComments = DataStore.itemComments.filter(x => x.id !== replyId);
+    DataStore.save();
+    this.renderItemComments(itemId);
   },
 
   closeItemModal() {
@@ -922,22 +1021,38 @@ const App = {
         mediaHtml = `<div style="padding:0 var(--space-lg) var(--space-sm);"><a href="${this.escapeHtml(post.media_url)}" target="_blank" rel="noopener" class="btn btn--secondary btn--sm" style="display:inline-flex;">🔗 ${this.escapeHtml(post.media_url).substring(0,50)}${post.media_url.length > 50 ? '…' : ''}</a></div>`;
       }
 
+      const userName = this.isAdmin ? 'Admin' : (DataStore.currentUser ? DataStore.currentUser.name : '');
+      const isPostOwner = this.isAdmin || (userName && userName === post.user_name);
+
       const repliesHtml = postReplies.map(r => {
         const rs = DataStore.getSchool(r.user_school);
-        return `<div class="social-comment">
+        const isReplyOwner = this.isAdmin || (userName && userName === r.user_name);
+        const replyOwnerBtns = isReplyOwner
+          ? `<span class="social-post__owner-actions">
+              <button class="social-owner-btn" onclick="App.editSocialComment('${r.id}','${post.id}')">✏️</button>
+              <button class="social-owner-btn" onclick="App.deleteSocialComment('${r.id}','${post.id}')">🗑️</button>
+             </span>`
+          : '';
+        return `<div class="social-comment" id="sc-wrap-${r.id}">
           <div class="social-comment__avatar" style="background:${gc(r.user_name)}">${gi(r.user_name)}</div>
           <div class="social-comment__body">
             <span class="social-comment__name">${this.escapeHtml(r.user_name)}</span>
             <span class="social-comment__school">${rs ? DataStore.getSchoolName(rs.id) : ''}</span>
-            <div class="social-comment__text">${this.escapeHtml(r.content)}</div>
+            ${replyOwnerBtns}
+            <div class="social-comment__text" id="sc-text-${r.id}">${this.escapeHtml(r.content)}</div>
             <button class="item-comment__translate" onclick="App.toggleTranslation('sc-${r.id}','${this.escapeHtml(r.content).replace(/'/g,"\\'")}',this)">🌐</button>
             <div id="translated-sc-${r.id}" class="item-comment__translated" style="display:none;"></div>
           </div>
         </div>`;
       }).join('');
 
-      const userName = this.isAdmin ? 'Admin' : (DataStore.currentUser ? DataStore.currentUser.name : '');
       const postContentEsc = post.content.replace(/'/g,"\\'").replace(/\n/g,' ');
+      const postOwnerBtns = isPostOwner
+        ? `<div class="social-post__owner-actions">
+            <button class="social-owner-btn" onclick="App.editSocialPost('${post.id}')">✏️</button>
+            <button class="social-owner-btn" onclick="App.deleteSocialPost('${post.id}')">🗑️</button>
+           </div>`
+        : '';
       return `<div class="social-post" id="sp-${post.id}">
         <div class="social-post__header">
           <div class="social-post__avatar" style="background:${gc(post.user_name)}">${gi(post.user_name)}</div>
@@ -945,8 +1060,9 @@ const App = {
             <div class="social-post__name">${this.escapeHtml(post.user_name)}</div>
             <div class="social-post__meta">${school ? DataStore.getSchoolName(school.id) : ''} · ${this.formatDate(post.created_at)}</div>
           </div>
+          ${postOwnerBtns}
         </div>
-        <div class="social-post__content">${this.escapeHtml(post.content)}</div>
+        <div class="social-post__content" id="sp-text-${post.id}">${this.escapeHtml(post.content)}</div>
         <div id="translated-${post.id}" class="social-post__translated" style="display:none;"></div>
         ${mediaHtml}
         <div class="social-post__actions">
@@ -1037,6 +1153,69 @@ const App = {
   },
 
   reactToMessage(id, type) { this.toast(`${I18N.t('react.' + type)}!`); },
+
+  // ===== Social Post Edit / Delete =====
+  editSocialPost(postId) {
+    const msg = DataStore.messages.find(m => m.id === postId);
+    if (!msg) return;
+    const textEl = document.getElementById('sp-text-' + postId);
+    if (!textEl) return;
+    textEl.innerHTML = `<div class="social-post__edit-area">
+      <textarea class="form-input" id="sp-edit-${postId}" rows="3" style="font-size:14px;">${this.escapeHtml(msg.content)}</textarea>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button class="btn btn--primary btn--sm" onclick="App.saveSocialPostEdit('${postId}')">저장</button>
+        <button class="btn btn--secondary btn--sm" onclick="App.loadSocialFeed('${this.currentBox ? this.currentBox.id : ''}')">취소</button>
+      </div>
+    </div>`;
+  },
+
+  saveSocialPostEdit(postId) {
+    const ta = document.getElementById('sp-edit-' + postId);
+    if (!ta) return;
+    const newText = ta.value.trim();
+    if (!newText) return;
+    const msg = DataStore.messages.find(m => m.id === postId);
+    if (msg) { msg.content = newText; DataStore.save(); }
+    if (this.currentBox) this.loadSocialFeed(this.currentBox.id);
+  },
+
+  deleteSocialPost(postId) {
+    if (!confirm('이 게시글을 삭제할까요?')) return;
+    DataStore.messages = DataStore.messages.filter(m => m.id !== postId && m.parent_id !== postId);
+    DataStore.save();
+    if (this.currentBox) this.loadSocialFeed(this.currentBox.id);
+  },
+
+  editSocialComment(replyId, postId) {
+    const msg = DataStore.messages.find(m => m.id === replyId);
+    if (!msg) return;
+    const textEl = document.getElementById('sc-text-' + replyId);
+    if (!textEl) return;
+    textEl.innerHTML = `<div class="social-post__edit-area">
+      <textarea class="form-input" id="sc-edit-${replyId}" rows="2" style="font-size:13px;">${this.escapeHtml(msg.content)}</textarea>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn--primary btn--sm" onclick="App.saveSocialCommentEdit('${replyId}','${postId}')">저장</button>
+        <button class="btn btn--secondary btn--sm" onclick="App.loadSocialFeed('${this.currentBox ? this.currentBox.id : ''}')">취소</button>
+      </div>
+    </div>`;
+  },
+
+  saveSocialCommentEdit(replyId, postId) {
+    const ta = document.getElementById('sc-edit-' + replyId);
+    if (!ta) return;
+    const newText = ta.value.trim();
+    if (!newText) return;
+    const msg = DataStore.messages.find(m => m.id === replyId);
+    if (msg) { msg.content = newText; DataStore.save(); }
+    if (this.currentBox) this.loadSocialFeed(this.currentBox.id);
+  },
+
+  deleteSocialComment(replyId, postId) {
+    if (!confirm('이 댓글을 삭제할까요?')) return;
+    DataStore.messages = DataStore.messages.filter(m => m.id !== replyId);
+    DataStore.save();
+    if (this.currentBox) this.loadSocialFeed(this.currentBox.id);
+  },
 
   // ===== Translation =====
   async translateText(text, targetLang) {

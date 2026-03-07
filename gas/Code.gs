@@ -325,6 +325,26 @@ function doPost(e) {
         return jsonResponse(result);
       }
 
+      case 'createSchool': {
+        const id = generateId('sch');
+        const school = {
+          id,
+          name_ko: body.name_ko || '',
+          name_en: body.name_en || '',
+          name_ja: body.name_ja || '',
+          country: body.country || '',
+          logo_url: body.logo_url || '',
+          created_at: new Date().toISOString()
+        };
+        appendRow('Schools', school);
+        return jsonResponse(school);
+      }
+
+      case 'deleteSchool': {
+        deleteRow('Schools', body.id);
+        return jsonResponse(true);
+      }
+
       case 'addReaction': {
         const id = generateId('rct');
         const reaction = {

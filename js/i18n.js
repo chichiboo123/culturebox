@@ -133,6 +133,19 @@ const I18N = {
       'login.student': '학생',
       'login.teacher': '교사',
       'login.submit': '시작하기',
+      'login.code': '참여 코드',
+      'login.code.placeholder': '선생님이 알려준 코드를 입력하세요',
+      'login.code.invalid': '올바른 참여 코드를 입력해주세요.',
+      'login.name.required': '이름을 입력해주세요.',
+      'login.code.desc': '참여 코드는 선생님에게 받을 수 있어요.',
+      'login.teacher.code': '교사 코드',
+      'login.teacher.code.placeholder': '교사 인증 코드를 입력하세요',
+
+      // Thread messages
+      'msg.thread': '답글 보기',
+      'msg.thread.count': '개의 답글',
+      'msg.reply.placeholder': '답글을 입력하세요...',
+      'msg.write': '메시지 작성',
     },
     en: {
       'nav.home': 'Home',
@@ -250,6 +263,18 @@ const I18N = {
       'login.student': 'Student',
       'login.teacher': 'Teacher',
       'login.submit': 'Get Started',
+      'login.code': 'Access Code',
+      'login.code.placeholder': 'Enter the code from your teacher',
+      'login.code.invalid': 'Please enter a valid access code.',
+      'login.name.required': 'Please enter your name.',
+      'login.code.desc': 'Ask your teacher for the access code.',
+      'login.teacher.code': 'Teacher Code',
+      'login.teacher.code.placeholder': 'Enter teacher verification code',
+
+      'msg.thread': 'View replies',
+      'msg.thread.count': 'replies',
+      'msg.reply.placeholder': 'Write a reply...',
+      'msg.write': 'Write a message',
     },
     ja: {
       'nav.home': 'ホーム',
@@ -367,6 +392,18 @@ const I18N = {
       'login.student': '生徒',
       'login.teacher': '先生',
       'login.submit': 'はじめる',
+      'login.code': '参加コード',
+      'login.code.placeholder': '先生から教えてもらったコードを入力',
+      'login.code.invalid': '正しい参加コードを入力してください。',
+      'login.name.required': '名前を入力してください。',
+      'login.code.desc': '参加コードは先生に聞いてください。',
+      'login.teacher.code': '先生コード',
+      'login.teacher.code.placeholder': '先生認証コードを入力',
+
+      'msg.thread': '返信を見る',
+      'msg.thread.count': '件の返信',
+      'msg.reply.placeholder': '返信を入力...',
+      'msg.write': 'メッセージを書く',
     }
   },
 
@@ -415,9 +452,9 @@ const I18N = {
 
   getAvailableLangs() {
     return [
-      { code: 'ko', name: '한국어', flag: '\uD83C\uDDF0\uD83C\uDDF7' },
-      { code: 'en', name: 'English', flag: '\uD83C\uDDFA\uD83C\uDDF8' },
-      { code: 'ja', name: '日本語', flag: '\uD83C\uDDEF\uD83C\uDDF5' }
+      { code: 'ko', name: '한국어' },
+      { code: 'en', name: 'English' },
+      { code: 'ja', name: '日本語' }
     ];
   }
 };

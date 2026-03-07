@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Digital Culture Box</title>
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <link rel="stylesheet" href="css/style.css">
@@ -27,7 +27,7 @@
 
       <div class="nav__actions">
         <button class="nav__lang-btn" id="langToggle" onclick="App.toggleLangMenu()">
-          <span id="langCurrent">한국어</span>
+          <span id="langCurrent">KO</span>
           <div class="nav__lang-dropdown" id="langDropdown"></div>
         </button>
         <button class="btn btn--primary btn--sm" id="loginBtn" data-i18n="nav.login" onclick="App.showLogin()">로그인</button>
@@ -42,7 +42,6 @@
 
     <!-- ========== HOME PAGE ========== -->
     <div class="page active" id="page-home">
-      <!-- Hero -->
       <section class="hero">
         <div class="container">
           <h1 class="hero__title" data-i18n="landing.title">Digital Culture Box</h1>
@@ -51,7 +50,7 @@
 상대 학교의 문화 상자를 열어보는 특별한 경험</p>
           <div class="hero__actions">
             <button class="btn btn--primary btn--lg" onclick="App.navigate('explore')" data-i18n="landing.cta.explore">박스 구경하기</button>
-            <button class="btn btn--accent btn--lg" onclick="App.navigate('create')" data-i18n="landing.cta.create">박스 만들기</button>
+            <button class="btn btn--secondary btn--lg" onclick="App.navigate('create')" data-i18n="landing.cta.create">박스 만들기</button>
           </div>
           <div class="hero__stats">
             <div class="hero__stat">
@@ -70,7 +69,6 @@
         </div>
       </section>
 
-      <!-- How it works -->
       <section class="how-section">
         <div class="container">
           <h2 class="section-title" data-i18n="how.title">어떻게 사용하나요?</h2>
@@ -103,9 +101,11 @@
         </div>
       </section>
 
-      <!-- Recent Boxes Preview -->
-      <section class="container" style="padding-bottom: 64px;">
-        <h2 class="section-title">&#x1F30D; Recent Culture Boxes</h2>
+      <section class="container" style="padding-bottom: 48px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h2 class="section-title" style="margin-bottom:0;text-align:left;" data-i18n="nav.explore">박스 탐색</h2>
+          <a href="#" class="back-btn" onclick="App.navigate('explore')" style="color:var(--color-primary)">View All &rarr;</a>
+        </div>
         <div class="box-grid" id="recentBoxes"></div>
       </section>
     </div>
@@ -115,9 +115,7 @@
       <div class="container">
         <div class="page-header">
           <h1 class="page-header__title" data-i18n="nav.explore">박스 탐색</h1>
-          <div class="page-header__actions">
-            <input class="form-input" style="width:220px" data-i18n-placeholder="common.search" placeholder="검색" id="exploreSearch" oninput="App.filterBoxes()">
-          </div>
+          <input class="form-input" style="width:200px;padding:10px 14px;" data-i18n-placeholder="common.search" placeholder="검색" id="exploreSearch" oninput="App.filterBoxes()">
         </div>
         <div class="filter-bar" id="exploreFilters">
           <button class="filter-chip active" data-filter="all" data-i18n="common.all" onclick="App.setFilter('all')">전체</button>
@@ -132,36 +130,51 @@
     <!-- ========== BOX DETAIL PAGE ========== -->
     <div class="page" id="page-boxdetail">
       <div class="container">
-        <!-- Unboxing experience -->
+        <!-- Unboxing experience (2-step) -->
         <div id="unboxingView" class="unboxing">
-          <div class="unboxing__box-wrapper" id="unboxClickArea" onclick="App.startUnboxing()">
-            <div class="unboxing__box-front">
-              <div class="unboxing__box-tape"></div>
-              <div class="unboxing__box-tape unboxing__box-tape--h"></div>
-              <div class="unboxing__box-label">
-                <div class="unboxing__box-label-from" id="unboxFrom"></div>
-                <div class="unboxing__box-label-school" id="unboxSchool"></div>
-              </div>
+          <h2 class="unboxing__title" id="unboxTitle"></h2>
+          <p class="unboxing__from-text"><span data-i18n="unbox.from">보낸 학교</span> <span class="unboxing__from-school" id="unboxSchool"></span></p>
+
+          <div class="unboxing__box-wrapper" id="unboxClickArea">
+            <div class="unboxing__box-body">
+              <span class="unboxing__box-body-icon">&#x1F4E6;</span>
             </div>
+            <div class="unboxing__tape" id="unboxTape" onclick="App.removeTape(event)">
+              <span class="unboxing__tape-text">FRAGILE &bull; DIGITAL CULTURE BOX</span>
+            </div>
+            <div class="unboxing__heart">&#x2764;&#xFE0F;</div>
           </div>
-          <p class="unboxing__prompt" data-i18n="unbox.tap" id="unboxPrompt">상자를 탭하여 개봉하세요!</p>
+
+          <p class="unboxing__prompt" id="unboxPrompt" data-i18n="unbox.tap">상자를 탭하여 개봉하세요!</p>
+          <button class="btn btn--primary btn--lg unboxing__open-btn hidden" id="unboxOpenBtn" onclick="App.openBoxAnimation()">
+            <span data-i18n="unbox.tap">상자 열기</span>
+          </button>
+          <div style="margin-top:24px;">
+            <button class="back-btn" onclick="App.navigate('explore')">&larr; Back</button>
+          </div>
         </div>
 
-        <!-- Box detail (shown after unboxing) -->
+        <!-- Box detail (after unboxing) -->
         <div id="boxDetailView" class="hidden">
+          <button class="back-btn" onclick="App.navigate('explore')" style="margin-bottom:8px;">&larr; Back</button>
+
           <div class="box-detail-header">
-            <div class="box-detail-header__cover" id="boxDetailCover"></div>
             <div class="box-detail-header__info">
-              <h1 class="box-detail-header__title" id="boxDetailTitle"></h1>
+              <div class="box-detail-header__title-row">
+                <h1 class="box-detail-header__title" id="boxDetailTitle"></h1>
+                <span class="badge" id="boxDetailBadge"></span>
+              </div>
               <p class="box-detail-header__desc" id="boxDetailDesc"></p>
               <div class="box-detail-header__meta" id="boxDetailMeta"></div>
             </div>
+            <div class="box-detail-header__actions">
+              <button class="btn btn--secondary btn--sm" onclick="App.switchTab('messages')">&#x1F4AC; <span data-i18n="msg.title">메시지</span></button>
+            </div>
           </div>
 
-          <!-- Tabs: Items / Messages -->
           <div class="tabs">
             <button class="tab-btn active" data-tab="items" onclick="App.switchTab('items')">&#x1F4E6; Items</button>
-            <button class="tab-btn" data-tab="messages" onclick="App.switchTab('messages')">&#x1F4AC; Messages</button>
+            <button class="tab-btn" data-tab="messages" onclick="App.switchTab('messages')">&#x1F4AC; <span data-i18n="msg.title">메시지</span></button>
           </div>
 
           <div class="tab-content active" id="tab-items">
@@ -170,11 +183,13 @@
 
           <div class="tab-content" id="tab-messages">
             <div class="message-board">
-              <div class="message-list" id="messageList"></div>
-              <div class="message-input-area">
-                <input type="text" id="messageInput" data-i18n-placeholder="msg.placeholder" placeholder="메시지를 남겨주세요...">
-                <button class="btn btn--primary btn--sm" data-i18n="msg.send" onclick="App.sendMessage()">보내기</button>
+              <div class="message-compose">
+                <textarea class="message-compose__input" id="messageInput" data-i18n-placeholder="msg.placeholder" placeholder="메시지를 남겨주세요..." rows="2"></textarea>
+                <div class="message-compose__actions">
+                  <button class="btn btn--primary btn--sm" data-i18n="msg.send" onclick="App.sendMessage()">보내기</button>
+                </div>
               </div>
+              <div class="thread-list" id="messageList"></div>
             </div>
           </div>
         </div>
@@ -184,9 +199,8 @@
     <!-- ========== CREATE BOX PAGE ========== -->
     <div class="page" id="page-create">
       <div class="create-flow">
-        <h1 class="page-header__title" style="text-align:center; margin-bottom:32px;" data-i18n="create.title">새 컬쳐 박스 만들기</h1>
+        <h1 class="page-header__title" style="text-align:center;margin-bottom:32px;" data-i18n="create.title">새 컬쳐 박스 만들기</h1>
 
-        <!-- Stepper -->
         <div class="create-flow__stepper" id="createStepper">
           <div class="stepper__step active" data-step="1">
             <div class="stepper__circle">1</div>
@@ -209,23 +223,25 @@
           </div>
         </div>
 
-        <!-- Step 1: Basic Info -->
+        <!-- Step 1 -->
         <div class="create-panel active" id="createStep1">
           <div class="form-group">
             <label class="form-label" data-i18n="create.boxname">상자 이름</label>
-            <input class="form-input" id="boxNameInput" data-i18n-placeholder="create.boxname.placeholder" placeholder="예: 우리 학교 급식 대탐험">
+            <input class="form-input" id="boxNameInput" data-i18n-placeholder="create.boxname.placeholder">
           </div>
           <div class="form-group">
             <label class="form-label" data-i18n="create.desc">상자 설명</label>
-            <textarea class="form-textarea" id="boxDescInput" data-i18n-placeholder="create.desc.placeholder" placeholder="이 상자에는 어떤 것들이 담겨 있나요?"></textarea>
+            <textarea class="form-textarea" id="boxDescInput" data-i18n-placeholder="create.desc.placeholder"></textarea>
           </div>
-          <div class="form-group">
-            <label class="form-label" data-i18n="create.from">보내는 학교</label>
-            <select class="form-select" id="boxFromSchool"></select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" data-i18n="create.to">받는 학교</label>
-            <select class="form-select" id="boxToSchool"></select>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group">
+              <label class="form-label" data-i18n="create.from">보내는 학교</label>
+              <select class="form-select" id="boxFromSchool"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-i18n="create.to">받는 학교</label>
+              <select class="form-select" id="boxToSchool"></select>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label" data-i18n="create.cover">커버 이미지</label>
@@ -234,16 +250,16 @@
               <div class="file-upload__text">Click or drag to upload</div>
             </div>
           </div>
-          <div style="display:flex; justify-content:flex-end; gap:12px;">
+          <div style="display:flex;justify-content:flex-end;">
             <button class="btn btn--primary" onclick="App.createStep(2)" data-i18n="create.next">다음</button>
           </div>
         </div>
 
-        <!-- Step 2: Add Items -->
+        <!-- Step 2 -->
         <div class="create-panel" id="createStep2">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
             <h3 data-i18n="item.add">아이템 추가</h3>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('text')">&#x1F4DD; <span data-i18n="item.text">텍스트</span></button>
               <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('image')">&#x1F5BC;&#xFE0F; <span data-i18n="item.image">이미지</span></button>
               <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('video')">&#x1F3AC; <span data-i18n="item.video">영상</span></button>
@@ -252,68 +268,63 @@
               <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('pdf')">&#x1F4C4; <span data-i18n="item.pdf">PDF</span></button>
             </div>
           </div>
-
-          <!-- Item form area -->
-          <div id="itemFormArea" class="hidden" style="background:var(--color-bg);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <div id="itemFormArea" class="hidden" style="background:var(--color-surface-warm);border-radius:var(--radius-xl);padding:20px;margin-bottom:16px;border:1px solid var(--color-border);">
             <div class="form-group">
               <label class="form-label" data-i18n="item.title">제목</label>
-              <input class="form-input" id="itemTitleInput" data-i18n-placeholder="item.title.placeholder" placeholder="아이템 제목을 입력하세요">
+              <input class="form-input" id="itemTitleInput" data-i18n-placeholder="item.title.placeholder">
             </div>
             <div class="form-group" id="itemContentGroup">
               <label class="form-label" data-i18n="item.content">내용</label>
-              <textarea class="form-textarea" id="itemContentInput" data-i18n-placeholder="item.content.placeholder" placeholder="내용을 입력하세요..."></textarea>
+              <textarea class="form-textarea" id="itemContentInput" data-i18n-placeholder="item.content.placeholder"></textarea>
             </div>
             <div class="form-group hidden" id="itemUrlGroup">
               <label class="form-label" data-i18n="item.url">URL</label>
-              <input class="form-input" id="itemUrlInput" data-i18n-placeholder="item.url.placeholder" placeholder="https://...">
+              <input class="form-input" id="itemUrlInput" data-i18n-placeholder="item.url.placeholder">
             </div>
             <div class="form-group hidden" id="itemFileGroup">
               <label class="form-label" data-i18n="item.upload">파일 업로드</label>
               <div class="file-upload" id="itemFileUpload">
                 <div class="file-upload__icon">&#x1F4CE;</div>
-                <div class="file-upload__text">Click or drag to upload</div>
+                <div class="file-upload__text">Click or drag</div>
               </div>
             </div>
-            <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
               <button class="btn btn--ghost btn--sm" data-i18n="common.cancel" onclick="App.cancelItemForm()">취소</button>
               <button class="btn btn--primary btn--sm" data-i18n="common.save" onclick="App.saveItem()">저장</button>
             </div>
           </div>
-
-          <!-- Items list -->
           <div id="createItemsList"></div>
-
-          <div style="display:flex; justify-content:space-between; margin-top:24px;">
+          <div style="display:flex;justify-content:space-between;margin-top:20px;">
             <button class="btn btn--secondary" onclick="App.createStep(1)" data-i18n="create.prev">이전</button>
             <button class="btn btn--primary" onclick="App.createStep(3)" data-i18n="create.next">다음</button>
           </div>
         </div>
 
-        <!-- Step 3: Packing Animation -->
+        <!-- Step 3 -->
         <div class="create-panel" id="createStep3">
           <div style="text-align:center;">
             <div class="packing-scene" id="packingScene">
               <div class="packing-box__lid"></div>
               <div class="packing-box">
-                <div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:48px;opacity:0.5;">&#x1F4E6;</div>
+                <div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:40px;opacity:0.4;">&#x1F4E6;</div>
               </div>
               <div class="packing-tape"></div>
               <div class="packing-label" id="packingLabel">
-                <div style="font-size:10px;color:var(--color-text-tertiary);">TO:</div>
-                <div style="font-weight:700;font-size:12px;" id="packingLabelTo"></div>
+                <div style="font-size:9px;color:var(--color-text-tertiary);">TO:</div>
+                <div style="font-weight:700;font-size:11px;" id="packingLabelTo"></div>
               </div>
             </div>
-            <div style="margin-top:24px;">
-              <button class="btn btn--accent" onclick="App.runPackingAnimation()">&#x1F4E6; Pack this box!</button>
+            <div style="margin-top:20px;">
+              <button class="btn btn--primary" onclick="App.runPackingAnimation()">&#x1F4E6; Pack this box!</button>
             </div>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-top:32px;">
+          <div style="display:flex;justify-content:space-between;margin-top:24px;">
             <button class="btn btn--secondary" onclick="App.createStep(2)" data-i18n="create.prev">이전</button>
             <button class="btn btn--primary" onclick="App.createStep(4)" data-i18n="create.next">다음</button>
           </div>
         </div>
 
-        <!-- Step 4: Send -->
+        <!-- Step 4 -->
         <div class="create-panel" id="createStep4">
           <div class="sending-scene">
             <div class="sending-box-anim">&#x1F4E6;</div>
@@ -323,7 +334,7 @@
               </div>
               <div class="sending-progress__text" id="sendProgressText"></div>
             </div>
-            <div style="margin-top:32px;">
+            <div style="margin-top:24px;">
               <button class="btn btn--primary btn--lg" id="sendBoxBtn" onclick="App.sendBox()" data-i18n="create.send">발송하기</button>
             </div>
             <div style="margin-top:12px;">
@@ -360,9 +371,7 @@
               <li class="admin-sidebar__item" onclick="App.adminTab('messages')">&#x1F4AC; <span data-i18n="admin.messages">메시지 관리</span></li>
             </ul>
           </aside>
-          <div class="admin-content" id="adminContent">
-            <!-- Dynamic admin content -->
-          </div>
+          <div class="admin-content" id="adminContent"></div>
         </div>
       </div>
     </div>
@@ -372,24 +381,44 @@
   <!-- Login Modal -->
   <div class="modal-overlay" id="loginModal">
     <div class="modal">
+      <button class="modal__close" onclick="App.hideLogin()">&times;</button>
       <h2 class="modal__title" data-i18n="login.title">로그인</h2>
+
+      <!-- Role selector -->
+      <div class="role-selector" id="roleSelector">
+        <button class="role-selector__btn active" data-role="student" onclick="App.selectRole('student')">
+          <span data-i18n="login.student">학생</span>
+        </button>
+        <button class="role-selector__btn" data-role="teacher" onclick="App.selectRole('teacher')">
+          <span data-i18n="login.teacher">교사</span>
+        </button>
+      </div>
+
       <div class="form-group">
         <label class="form-label" data-i18n="login.name">이름</label>
-        <input class="form-input" id="loginName" placeholder="">
+        <input class="form-input" id="loginName">
+        <div class="form-error" id="loginNameError" data-i18n="login.name.required">이름을 입력해주세요.</div>
       </div>
+
       <div class="form-group">
         <label class="form-label" data-i18n="login.school">학교</label>
         <select class="form-select" id="loginSchool"></select>
       </div>
-      <div class="form-group">
-        <label class="form-label" data-i18n="login.role">역할</label>
-        <select class="form-select" id="loginRole">
-          <option value="student" data-i18n="login.student">학생</option>
-          <option value="teacher" data-i18n="login.teacher">교사</option>
-        </select>
+
+      <div class="form-group" id="studentCodeGroup">
+        <label class="form-label" data-i18n="login.code">참여 코드</label>
+        <input class="form-input" id="loginCode" data-i18n-placeholder="login.code.placeholder" autocomplete="off">
+        <div class="form-hint" data-i18n="login.code.desc">참여 코드는 선생님에게 받을 수 있어요.</div>
+        <div class="form-error" id="loginCodeError" data-i18n="login.code.invalid">올바른 참여 코드를 입력해주세요.</div>
       </div>
-      <button class="btn btn--primary" style="width:100%" onclick="App.login()" data-i18n="login.submit">시작하기</button>
-      <button class="btn btn--ghost" style="width:100%;margin-top:8px" onclick="App.hideLogin()" data-i18n="common.cancel">취소</button>
+
+      <div class="form-group hidden" id="teacherCodeGroup">
+        <label class="form-label" data-i18n="login.teacher.code">교사 코드</label>
+        <input class="form-input" id="loginTeacherCode" data-i18n-placeholder="login.teacher.code.placeholder" autocomplete="off">
+        <div class="form-error" id="loginTeacherCodeError" data-i18n="login.code.invalid">올바른 참여 코드를 입력해주세요.</div>
+      </div>
+
+      <button class="btn btn--primary btn--full" onclick="App.login()" data-i18n="login.submit" style="margin-top:8px;">시작하기</button>
     </div>
   </div>
 

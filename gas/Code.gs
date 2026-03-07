@@ -16,7 +16,8 @@
  *    from_school_id | to_school_id | status | cover_image_url | created_by | created_at | sent_at | opened_at
  *
  *    Sheet "Items":
- *    id | box_id | type | title | title_en | title_ja | content | file_url | order | created_by | created_at
+ *    id | box_id | type | title | title_en | title_ja | content | content_en | content_ja | file_url | order | created_by | created_at
+ *    (content_en / content_ja: can be filled via =GOOGLETRANSLATE(G2,"ko","en") in Sheets)
  *
  *    Sheet "Messages":
  *    id | box_id | user_id | user_name | user_school | content | type | media_url | parent_id | status | created_at
@@ -243,6 +244,8 @@ function doPost(e) {
           title_en: body.title_en || '',
           title_ja: body.title_ja || '',
           content: body.content || '',
+          content_en: body.content_en || '',
+          content_ja: body.content_ja || '',
           file_url: body.file_url || '',
           order: body.order || 0,
           created_by: body.created_by || '',
@@ -329,7 +332,7 @@ function setupSheets() {
     'Schools': ['id', 'name_ko', 'name_en', 'name_ja', 'country', 'logo_url', 'created_at'],
     'Users': ['id', 'school_id', 'role', 'name', 'email', 'lang_pref', 'created_at'],
     'Boxes': ['id', 'title', 'title_en', 'title_ja', 'description', 'description_en', 'description_ja', 'from_school_id', 'to_school_id', 'status', 'cover_image_url', 'created_by', 'created_at', 'sent_at', 'opened_at'],
-    'Items': ['id', 'box_id', 'type', 'title', 'title_en', 'title_ja', 'content', 'file_url', 'order', 'created_by', 'created_at'],
+    'Items': ['id', 'box_id', 'type', 'title', 'title_en', 'title_ja', 'content', 'content_en', 'content_ja', 'file_url', 'order', 'created_by', 'created_at'],
     'Messages': ['id', 'box_id', 'user_id', 'user_name', 'user_school', 'content', 'type', 'media_url', 'parent_id', 'status', 'created_at'],
     'Reactions': ['id', 'target_type', 'target_id', 'user_id', 'type', 'created_at']
   };

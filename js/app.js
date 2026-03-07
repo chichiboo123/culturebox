@@ -1,5 +1,6 @@
 /**
- * Digital Culture Box - Main Application v2
+ * Digital Culture Box - Main Application v3
+ * Features: Theme system, school-based login, admin panel, localStorage persistence
  */
 const App = {
   currentPage: 'home',
@@ -7,40 +8,100 @@ const App = {
   currentFilter: 'all',
   createState: { step: 1, box: null, items: [] },
   currentItemType: null,
-  unboxStep: 0, // 0=closed, 1=tape removed, 2=opened
+  unboxStep: 0,
   selectedRole: 'student',
+  isAdmin: false,
+  pendingNav: null,
+  currentTheme: 'default',
 
-  // Access codes for login validation
+  // Access codes for regular login
   ACCESS_CODES: {
     student: ['CULTURE2026', 'BOX2026', 'HELLO2026'],
-    teacher: ['TEACHER2026', 'ADMIN2026']
+    teacher: ['TEACHER2026', 'EDU2026']
+  },
+
+  // Admin credentials check (obfuscated - do not expose plaintext)
+  _ck(u, p) {
+    const d = a => a.map(n => String.fromCharCode(n)).join('');
+    return u === d([109,97,115,116,101,114]) && p === d([50,56,54,53]);
+  },
+
+  // ===== Theme =====
+  themes: [
+    { id: 'default', label: '기본', color: '#D97706' },
+    { id: 'blue',    label: '파스텔 블루', color: '#60A5FA' },
+    { id: 'green',   label: '파스텔 그린', color: '#34D399' },
+    { id: 'pink',    label: '파스텔 핑크', color: '#F472B6' },
+  ],
+
+  setTheme(t) {
+    this.currentTheme = t;
+    document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
+    if (t !== 'default') document.body.classList.add('theme-' + t);
+    localStorage.setItem('dcb_theme', t);
+    document.querySelectorAll('.theme-option').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.theme === t);
+    });
+  },
+
+  loadTheme() {
+    const t = localStorage.getItem('dcb_theme') || 'default';
+    this.setTheme(t);
+  },
+
+  toggleThemePicker() {
+    document.getElementById('themePicker').classList.toggle('open');
   },
 
   // ===== Init =====
   async init() {
     I18N.init();
+    this.loadTheme();
     this.buildLangMenu();
     this.updateLangButton();
+
     document.addEventListener('langchange', () => {
       this.updateLangButton();
       this.refreshCurrentPage();
     });
-    this.loadStats();
-    this.loadRecentBoxes();
 
+    // Restore user session
     const savedUser = localStorage.getItem('dcb_user');
     if (savedUser) {
       try {
         DataStore.currentUser = JSON.parse(savedUser);
-        this.updateUserUI();
-      } catch (e) { /* ignore */ }
+      } catch(e) { localStorage.removeItem('dcb_user'); }
     }
 
+    // Restore admin session
+    if (localStorage.getItem('dcb_admin_session') === 'active') {
+      this.isAdmin = true;
+    }
+
+    this.updateUserUI();
+    this.loadStats();
+    this.loadRecentBoxes();
     this.populateSchoolSelectors();
   },
 
-  // ===== Navigation =====
+  // ===== Navigation (with login guards) =====
   navigate(page, data) {
+    // Admin-only pages
+    if (page === 'admin') {
+      if (!this.isAdmin) {
+        this.showAdminLogin();
+        return;
+      }
+    }
+
+    // Pages requiring regular login
+    const loginPages = ['explore', 'boxdetail', 'create', 'myboxes'];
+    if (loginPages.includes(page) && !DataStore.currentUser && !this.isAdmin) {
+      this.pendingNav = { page, data };
+      this.showLogin();
+      return;
+    }
+
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const target = document.getElementById('page-' + page);
     if (target) target.classList.add('active');
@@ -52,12 +113,12 @@ const App = {
     this.currentPage = page;
 
     switch (page) {
-      case 'home': this.loadRecentBoxes(); break;
-      case 'explore': this.loadExploreBoxes(); break;
+      case 'home':      this.loadRecentBoxes(); break;
+      case 'explore':   this.loadExploreBoxes(); break;
       case 'boxdetail': if (data) this.openBoxDetail(data); break;
-      case 'create': this.initCreateFlow(); break;
-      case 'myboxes': this.loadMyBoxes(); break;
-      case 'admin': this.loadAdmin(); break;
+      case 'create':    this.initCreateFlow(); break;
+      case 'myboxes':   this.loadMyBoxes(); break;
+      case 'admin':     this.loadAdmin(); break;
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -66,7 +127,7 @@ const App = {
 
   refreshCurrentPage() { this.navigate(this.currentPage); },
 
-  // ===== Language (no flags) =====
+  // ===== Language =====
   buildLangMenu() {
     const dropdown = document.getElementById('langDropdown');
     const langs = I18N.getAvailableLangs();
@@ -92,12 +153,11 @@ const App = {
   toggleLangMenu() { document.getElementById('langToggle').classList.toggle('open'); },
   toggleMobileNav() { document.getElementById('navLinks').classList.toggle('open'); },
 
-  // ===== Auth with access codes =====
+  // ===== Regular Login/Logout =====
   showLogin() {
     this.populateLoginSchools();
     this.selectedRole = 'student';
     this.selectRole('student');
-    // Clear errors
     document.querySelectorAll('.form-error').forEach(e => e.classList.remove('show'));
     document.getElementById('loginName').value = '';
     document.getElementById('loginCode').value = '';
@@ -105,7 +165,10 @@ const App = {
     document.getElementById('loginModal').classList.add('active');
   },
 
-  hideLogin() { document.getElementById('loginModal').classList.remove('active'); },
+  hideLogin() {
+    document.getElementById('loginModal').classList.remove('active');
+    this.pendingNav = null;
+  },
 
   selectRole(role) {
     this.selectedRole = role;
@@ -124,7 +187,6 @@ const App = {
   },
 
   login() {
-    // Clear previous errors
     document.querySelectorAll('.form-error').forEach(e => e.classList.remove('show'));
 
     const name = document.getElementById('loginName').value.trim();
@@ -136,7 +198,6 @@ const App = {
 
     const school = document.getElementById('loginSchool').value;
 
-    // Validate access code
     if (this.selectedRole === 'student') {
       const code = document.getElementById('loginCode').value.trim().toUpperCase();
       if (!this.ACCESS_CODES.student.includes(code)) {
@@ -164,7 +225,14 @@ const App = {
     localStorage.setItem('dcb_user', JSON.stringify(DataStore.currentUser));
     this.updateUserUI();
     this.hideLogin();
-    this.toast(`Welcome, ${name}!`);
+    this.toast(`🎉 환영해요, ${name}!`);
+
+    // Navigate to pending page if any
+    if (this.pendingNav) {
+      const { page, data } = this.pendingNav;
+      this.pendingNav = null;
+      setTimeout(() => this.navigate(page, data), 100);
+    }
   },
 
   logout() {
@@ -172,26 +240,100 @@ const App = {
     localStorage.removeItem('dcb_user');
     this.updateUserUI();
     this.navigate('home');
+    this.toast('로그아웃되었습니다.');
   },
 
   updateUserUI() {
     const user = DataStore.currentUser;
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
+    const userChip = document.getElementById('userChip');
+    const adminChip = document.getElementById('adminChip');
+    const navLinks = document.getElementById('navLinks');
 
-    if (user) {
+    // Nav link visibility
+    const navExplore  = document.getElementById('navExploreItem');
+    const navCreate   = document.getElementById('navCreateItem');
+    const navMyboxes  = document.getElementById('navMyboxesItem');
+    const navAdmin    = document.getElementById('navAdminItem');
+
+    if (this.isAdmin) {
       loginBtn.classList.add('hidden');
+      logoutBtn.classList.add('hidden');
+      if (userChip) userChip.classList.add('hidden');
+      if (adminChip) { adminChip.classList.remove('hidden'); }
+      if (navExplore) navExplore.classList.remove('hidden');
+      if (navCreate)  navCreate.classList.remove('hidden');
+      if (navMyboxes) navMyboxes.classList.remove('hidden');
+      if (navAdmin)   navAdmin.classList.remove('hidden');
+    } else if (user) {
+      loginBtn.classList.add('hidden');
+      if (adminChip) adminChip.classList.add('hidden');
+      if (userChip) {
+        userChip.classList.remove('hidden');
+        const school = DataStore.getSchool(user.school_id);
+        document.getElementById('userChipName').textContent = user.name;
+        document.getElementById('userChipSchool').textContent = school ? DataStore.getSchoolName(school.id) : '';
+      }
       logoutBtn.classList.remove('hidden');
-      logoutBtn.textContent = `${user.name}`;
-
-      const adminLink = document.querySelector('[data-page="admin"]');
-      if (adminLink) adminLink.parentElement.style.display = user.role === 'teacher' ? '' : 'none';
+      if (navExplore) navExplore.classList.remove('hidden');
+      if (navCreate)  navCreate.classList.remove('hidden');
+      if (navMyboxes) navMyboxes.classList.remove('hidden');
+      if (navAdmin)   navAdmin.classList.add('hidden');
     } else {
       loginBtn.classList.remove('hidden');
       logoutBtn.classList.add('hidden');
-      const adminLink = document.querySelector('[data-page="admin"]');
-      if (adminLink) adminLink.parentElement.style.display = 'none';
+      if (userChip)  userChip.classList.add('hidden');
+      if (adminChip) adminChip.classList.add('hidden');
+      if (navExplore) navExplore.classList.add('hidden');
+      if (navCreate)  navCreate.classList.add('hidden');
+      if (navMyboxes) navMyboxes.classList.add('hidden');
+      if (navAdmin)   navAdmin.classList.add('hidden');
     }
+
+    // Show login prompt on home page if not logged in
+    const loginPrompt = document.getElementById('homeLoginPrompt');
+    const homeContent = document.getElementById('homeLoggedContent');
+    if (loginPrompt) loginPrompt.classList.toggle('hidden', !!(user || this.isAdmin));
+    if (homeContent) homeContent.classList.toggle('hidden', !(user || this.isAdmin));
+  },
+
+  // ===== Admin Login =====
+  showAdminLogin() {
+    document.getElementById('adminUsername').value = '';
+    document.getElementById('adminPassword').value = '';
+    document.getElementById('adminLoginError').classList.remove('show');
+    document.getElementById('adminLoginModal').classList.add('active');
+  },
+
+  hideAdminLogin() {
+    document.getElementById('adminLoginModal').classList.remove('active');
+  },
+
+  adminLogin() {
+    const u = document.getElementById('adminUsername').value.trim();
+    const p = document.getElementById('adminPassword').value;
+
+    if (this._ck(u, p)) {
+      this.isAdmin = true;
+      localStorage.setItem('dcb_admin_session', 'active');
+      this.hideAdminLogin();
+      this.updateUserUI();
+      this.toast('🔑 관리자 모드로 접속했습니다.');
+      this.navigate('admin');
+    } else {
+      document.getElementById('adminLoginError').classList.add('show');
+      document.getElementById('adminPassword').value = '';
+      document.getElementById('adminPassword').focus();
+    }
+  },
+
+  adminLogout() {
+    this.isAdmin = false;
+    localStorage.removeItem('dcb_admin_session');
+    this.updateUserUI();
+    this.navigate('home');
+    this.toast('관리자 로그아웃되었습니다.');
   },
 
   // ===== Stats =====
@@ -214,7 +356,7 @@ const App = {
     });
   },
 
-  // ===== Box Card (reference design) =====
+  // ===== Box Card =====
   renderBoxCard(box) {
     const fromSchool = DataStore.getSchool(box.from_school_id);
     const toSchool = DataStore.getSchool(box.to_school_id);
@@ -233,13 +375,12 @@ const App = {
     const bgIdx = Math.abs(box.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % coverBgs.length;
 
     const isArrived = box.status === 'arrived' || box.status === 'sent';
-    const actionCls = isArrived ? 'box-card__action-btn--open' : 'box-card__action-btn--revisit';
-    const actionText = isArrived ? I18N.t('unbox.tap') : 'Revisit Box';
+    const actionText = isArrived ? '📦 열어보기' : '🔍 다시 보기';
 
     return `
       <div class="box-card" onclick="App.navigate('boxdetail','${box.id}')">
         <div class="box-card__cover" style="background:${coverBgs[bgIdx]}">
-          <span class="box-card__cover-placeholder">&#x1F4E6;</span>
+          <span class="box-card__cover-placeholder">📦</span>
           <span class="box-card__status box-card__status--${box.status}">${I18N.t(statusKey)}</span>
           <div class="box-card__cover-info">
             <div class="box-card__cover-from">${I18N.t('unbox.from')} ${fromSchool ? DataStore.getSchoolName(fromSchool.id) : ''}</div>
@@ -248,11 +389,11 @@ const App = {
         </div>
         <div class="box-card__body">
           <div class="box-card__meta">
-            <span class="box-card__meta-item">&#x1F4E6; ${items.length} Items</span>
-            <span class="box-card__meta-item">&#x1F4AC; ${msgs.length} Talks</span>
+            <span class="box-card__meta-item">📦 ${items.length} 아이템</span>
+            <span class="box-card__meta-item">💬 ${msgs.length} 대화</span>
           </div>
-          <button class="box-card__action-btn ${actionCls}">
-            ${actionText} &rsaquo;
+          <button class="box-card__action-btn">
+            ${actionText} ›
           </button>
         </div>
       </div>
@@ -263,21 +404,48 @@ const App = {
   async loadRecentBoxes() {
     const boxes = await API.getBoxes();
     const recent = boxes.filter(b => b.status !== 'draft').slice(0, 3);
-    document.getElementById('recentBoxes').innerHTML = recent.map(b => this.renderBoxCard(b)).join('');
+    const el = document.getElementById('recentBoxes');
+    if (el) el.innerHTML = recent.length
+      ? recent.map(b => this.renderBoxCard(b)).join('')
+      : `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state__icon">📭</div><div class="empty-state__text">아직 박스가 없어요!</div></div>`;
   },
 
-  // ===== Explore =====
+  // ===== Explore (school-filtered) =====
   async loadExploreBoxes() {
+    // Update school banner
+    const banner = document.getElementById('exploreBanner');
+    if (banner) {
+      if (!this.isAdmin && DataStore.currentUser) {
+        const school = DataStore.getSchool(DataStore.currentUser.school_id);
+        banner.innerHTML = `🏫 <strong>${school ? DataStore.getSchoolName(school.id) : ''}</strong>&nbsp; 관련 박스를 보여드립니다`;
+      } else if (this.isAdmin) {
+        banner.innerHTML = '⚙️ 관리자 모드 - 모든 박스 표시 중';
+      } else {
+        banner.innerHTML = '';
+      }
+    }
+
     const search = document.getElementById('exploreSearch')?.value || '';
     const boxes = await API.getBoxes({ status: this.currentFilter, search });
     const grid = document.getElementById('exploreGrid');
 
-    const visible = this.currentFilter === 'all'
+    let visible = this.currentFilter === 'all'
       ? boxes.filter(b => b.status !== 'draft')
       : boxes;
 
+    // Filter by school if not admin
+    if (!this.isAdmin && DataStore.currentUser) {
+      const sid = DataStore.currentUser.school_id;
+      visible = visible.filter(b =>
+        b.from_school_id === sid || b.to_school_id === sid
+      );
+    }
+
     if (visible.length === 0) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state__icon">&#x1F4ED;</div><div class="empty-state__text">${I18N.t('common.empty')}</div></div>`;
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-state__icon">📭</div>
+        <div class="empty-state__text">${I18N.t('common.empty')}</div>
+      </div>`;
       return;
     }
     grid.innerHTML = visible.map(b => this.renderBoxCard(b)).join('');
@@ -306,14 +474,12 @@ const App = {
     document.getElementById('unboxTitle').textContent = DataStore.getBoxTitle(box);
     document.getElementById('unboxSchool').textContent = fromSchool ? DataStore.getSchoolName(fromSchool.id) : '';
 
-    // Reset unbox UI
     const wrapper = document.getElementById('unboxClickArea');
     wrapper.classList.remove('opening');
     document.getElementById('unboxTape').classList.remove('removed');
     document.getElementById('unboxOpenBtn').classList.add('hidden');
     document.getElementById('unboxPrompt').textContent = I18N.t('unbox.tap');
 
-    // Skip unboxing for already opened/draft
     if (box.status === 'opened' || box.status === 'draft') {
       this.showBoxContent(box);
     }
@@ -341,10 +507,7 @@ const App = {
     }
 
     this.launchConfetti();
-
-    setTimeout(() => {
-      this.showBoxContent(this.currentBox);
-    }, 1200);
+    setTimeout(() => this.showBoxContent(this.currentBox), 1200);
   },
 
   showBoxContent(box) {
@@ -386,22 +549,22 @@ const App = {
     this.switchTab('items');
   },
 
-  // ===== Items (reference card design) =====
+  // ===== Items =====
   renderItems(items) {
     const grid = document.getElementById('itemsGrid');
     if (items.length === 0) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state__icon">&#x1F4ED;</div><div class="empty-state__text">${I18N.t('item.empty')}</div></div>`;
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state__icon">📭</div><div class="empty-state__text">${I18N.t('item.empty')}</div></div>`;
       return;
     }
 
     const typeIcons = {
-      text: { icon: '&#x1F4DD;', cls: 'text' },
-      image: { icon: '&#x1F5BC;&#xFE0F;', cls: 'image' },
-      video: { icon: '&#x1F3AC;', cls: 'video' },
-      youtube: { icon: '&#x25B6;&#xFE0F;', cls: 'youtube' },
-      link: { icon: '&#x1F517;', cls: 'link' },
-      pdf: { icon: '&#x1F4C4;', cls: 'pdf' },
-      file: { icon: '&#x1F4CE;', cls: 'file' },
+      text: { icon: '📝', cls: 'text' },
+      image: { icon: '🖼️', cls: 'image' },
+      video: { icon: '🎬', cls: 'video' },
+      youtube: { icon: '▶️', cls: 'youtube' },
+      link: { icon: '🔗', cls: 'link' },
+      pdf: { icon: '📄', cls: 'pdf' },
+      file: { icon: '📎', cls: 'file' },
     };
 
     grid.innerHTML = items.map(item => {
@@ -416,7 +579,7 @@ const App = {
           ${preview ? `<div class="item-card__preview">${preview}</div>` : ''}
           <div class="item-card__footer">
             <span>${I18N.t('item.' + item.type)}</span>
-            <span style="color:var(--color-text-tertiary);">Click to see more</span>
+            <span style="color:var(--color-text-tertiary);">탭하여 보기</span>
           </div>
         </div>
       `;
@@ -450,22 +613,22 @@ const App = {
         if (item.file_url) html += `<div class="item-detail__media"><video controls src="${this.escapeHtml(item.file_url)}"></video></div>`;
         break;
       case 'link':
-        html += `<div style="margin-bottom:12px;"><a href="${this.escapeHtml(item.file_url)}" target="_blank" rel="noopener" class="btn btn--secondary">&#x1F517; ${this.escapeHtml(item.file_url)}</a></div>`;
+        html += `<div style="margin-bottom:12px;"><a href="${this.escapeHtml(item.file_url)}" target="_blank" rel="noopener" class="btn btn--secondary">🔗 ${this.escapeHtml(item.file_url)}</a></div>`;
         if (item.content) html += `<div class="item-detail__content">${this.escapeHtml(item.content)}</div>`;
         break;
       case 'pdf':
-        if (item.file_url) html += `<div><a href="${this.escapeHtml(item.file_url)}" target="_blank" rel="noopener" class="btn btn--secondary">&#x1F4C4; Open PDF</a></div>`;
+        if (item.file_url) html += `<div><a href="${this.escapeHtml(item.file_url)}" target="_blank" rel="noopener" class="btn btn--secondary">📄 PDF 열기</a></div>`;
         break;
       default:
         if (item.content) html += `<div class="item-detail__content">${this.escapeHtml(item.content)}</div>`;
     }
 
     html += `
-      <div style="display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--color-border-light);">
-        <button class="reaction-btn" onclick="App.reactToItem('${item.id}','heart')">&#x2764;&#xFE0F; ${I18N.t('react.heart')}</button>
-        <button class="reaction-btn" onclick="App.reactToItem('${item.id}','star')">&#x2B50; ${I18N.t('react.star')}</button>
-        <button class="reaction-btn" onclick="App.reactToItem('${item.id}','surprise')">&#x1F62E; ${I18N.t('react.surprise')}</button>
-        <button class="reaction-btn" onclick="App.reactToItem('${item.id}','thanks')">&#x1F64F; ${I18N.t('react.thanks')}</button>
+      <div style="display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--color-border-light);flex-wrap:wrap;">
+        <button class="reaction-btn" onclick="App.reactToItem('${item.id}','heart')">❤️ ${I18N.t('react.heart')}</button>
+        <button class="reaction-btn" onclick="App.reactToItem('${item.id}','star')">⭐ ${I18N.t('react.star')}</button>
+        <button class="reaction-btn" onclick="App.reactToItem('${item.id}','surprise')">😮 ${I18N.t('react.surprise')}</button>
+        <button class="reaction-btn" onclick="App.reactToItem('${item.id}','thanks')">🙏 ${I18N.t('react.thanks')}</button>
       </div>
     `;
 
@@ -482,17 +645,16 @@ const App = {
     document.querySelectorAll('.tab-content').forEach(tc => tc.classList.toggle('active', tc.id === 'tab-' + tabName));
   },
 
-  // ===== Thread-based Messages =====
+  // ===== Thread Messages =====
   async loadBoxMessages(boxId) {
     const messages = await API.getMessages(boxId);
     const list = document.getElementById('messageList');
 
     if (messages.length === 0) {
-      list.innerHTML = `<div class="empty-state"><div class="empty-state__icon">&#x1F4AC;</div><div class="empty-state__text">${I18N.t('msg.empty')}</div></div>`;
+      list.innerHTML = `<div class="empty-state"><div class="empty-state__icon">💬</div><div class="empty-state__text">${I18N.t('msg.empty')}</div></div>`;
       return;
     }
 
-    // Group into threads: parent messages + their replies
     const parents = messages.filter(m => !m.parent_id);
     const replies = messages.filter(m => m.parent_id);
 
@@ -525,7 +687,6 @@ const App = {
         `;
       }).join('');
 
-      // Mini avatars for toggle
       const miniAvatars = replies.slice(0, 3).map(r =>
         `<div class="thread-toggle__mini-avatar" style="background:${getColor(r.user_name)}">${getInitial(r.user_name)}</div>`
       ).join('');
@@ -538,22 +699,22 @@ const App = {
         <div class="thread-replies" id="replies-${msg.id}">
           ${replyItems}
           <div class="thread-reply-input">
-            <input type="text" id="reply-input-${msg.id}" data-i18n-placeholder="msg.reply.placeholder" placeholder="${I18N.t('msg.reply.placeholder')}"
+            <input type="text" id="reply-input-${msg.id}" placeholder="${I18N.t('msg.reply.placeholder')}"
                    onkeydown="if(event.key==='Enter')App.sendReply('${msg.id}')">
-            <button class="btn btn--primary btn--sm" onclick="App.sendReply('${msg.id}')" data-i18n="msg.send">보내기</button>
+            <button class="btn btn--primary btn--sm" onclick="App.sendReply('${msg.id}')">${I18N.t('msg.send')}</button>
           </div>
         </div>
       `;
     } else {
       replyHtml = `
         <button class="thread-toggle" onclick="App.toggleThread('${msg.id}')">
-          <span data-i18n="msg.reply">답글</span>
+          <span>${I18N.t('msg.reply')}</span>
         </button>
         <div class="thread-replies" id="replies-${msg.id}">
           <div class="thread-reply-input">
-            <input type="text" id="reply-input-${msg.id}" data-i18n-placeholder="msg.reply.placeholder" placeholder="${I18N.t('msg.reply.placeholder')}"
+            <input type="text" id="reply-input-${msg.id}" placeholder="${I18N.t('msg.reply.placeholder')}"
                    onkeydown="if(event.key==='Enter')App.sendReply('${msg.id}')">
-            <button class="btn btn--primary btn--sm" onclick="App.sendReply('${msg.id}')" data-i18n="msg.send">보내기</button>
+            <button class="btn btn--primary btn--sm" onclick="App.sendReply('${msg.id}')">${I18N.t('msg.send')}</button>
           </div>
         </div>
       `;
@@ -572,9 +733,9 @@ const App = {
           </div>
           <div class="thread-item__content">${this.escapeHtml(msg.content)}</div>
           <div class="thread-item__actions">
-            <button class="reaction-btn" onclick="App.reactToMessage('${msg.id}','heart')">&#x2764;&#xFE0F;</button>
-            <button class="reaction-btn" onclick="App.reactToMessage('${msg.id}','star')">&#x2B50;</button>
-            <button class="reaction-btn" onclick="App.reactToMessage('${msg.id}','thanks')">&#x1F64F;</button>
+            <button class="reaction-btn" onclick="App.reactToMessage('${msg.id}','heart')">❤️</button>
+            <button class="reaction-btn" onclick="App.reactToMessage('${msg.id}','star')">⭐</button>
+            <button class="reaction-btn" onclick="App.reactToMessage('${msg.id}','thanks')">🙏</button>
           </div>
         </div>
         ${replyHtml}
@@ -588,7 +749,7 @@ const App = {
   },
 
   async sendMessage() {
-    if (!DataStore.currentUser) { this.showLogin(); return; }
+    if (!DataStore.currentUser && !this.isAdmin) { this.showLogin(); return; }
     const input = document.getElementById('messageInput');
     const text = input.value.trim();
     if (!text || !this.currentBox) return;
@@ -596,11 +757,11 @@ const App = {
     await API.addMessage({ box_id: this.currentBox.id, content: text, parent_id: null });
     input.value = '';
     this.loadBoxMessages(this.currentBox.id);
-    this.toast(I18N.t('msg.send') + '!');
+    this.toast('💬 메시지가 전송되었어요!');
   },
 
   async sendReply(parentId) {
-    if (!DataStore.currentUser) { this.showLogin(); return; }
+    if (!DataStore.currentUser && !this.isAdmin) { this.showLogin(); return; }
     const input = document.getElementById('reply-input-' + parentId);
     const text = input.value.trim();
     if (!text || !this.currentBox) return;
@@ -608,7 +769,6 @@ const App = {
     await API.addMessage({ box_id: this.currentBox.id, content: text, parent_id: parentId });
     input.value = '';
     this.loadBoxMessages(this.currentBox.id);
-    // Reopen the thread
     setTimeout(() => {
       const el = document.getElementById('replies-' + parentId);
       if (el) el.classList.add('open');
@@ -623,6 +783,12 @@ const App = {
     this.createState = { step: 1, box: null, items: [] };
     this.createStep(1);
     this.populateSchoolSelectors();
+
+    // Pre-fill from school with user's school
+    if (DataStore.currentUser) {
+      const fromSel = document.getElementById('boxFromSchool');
+      if (fromSel) fromSel.value = DataStore.currentUser.school_id;
+    }
   },
 
   createStep(step) {
@@ -664,7 +830,7 @@ const App = {
 
   saveItem() {
     const title = document.getElementById('itemTitleInput').value.trim();
-    if (!title) { this.toast(I18N.t('item.title') + '!'); return; }
+    if (!title) { this.toast('제목을 입력해주세요!'); return; }
     this.createState.items.push({
       id: DataStore.generateId('itm'),
       type: this.currentItemType,
@@ -675,15 +841,16 @@ const App = {
     });
     this.cancelItemForm();
     this.renderCreateItems();
+    this.toast('✅ 아이템이 추가되었어요!');
   },
 
   renderCreateItems() {
     const list = document.getElementById('createItemsList');
     if (this.createState.items.length === 0) {
-      list.innerHTML = `<div class="empty-state"><div class="empty-state__icon">&#x1F4ED;</div><div class="empty-state__text">${I18N.t('item.empty')}</div></div>`;
+      list.innerHTML = `<div class="empty-state"><div class="empty-state__icon">📭</div><div class="empty-state__text">아이템을 추가해보세요</div></div>`;
       return;
     }
-    const icons = { text:'&#x1F4DD;', image:'&#x1F5BC;&#xFE0F;', video:'&#x1F3AC;', youtube:'&#x25B6;&#xFE0F;', link:'&#x1F517;', pdf:'&#x1F4C4;', file:'&#x1F4CE;' };
+    const icons = { text:'📝', image:'🖼️', video:'🎬', youtube:'▶️', link:'🔗', pdf:'📄', file:'📎' };
     list.innerHTML = this.createState.items.map((item, idx) => `
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--color-surface);border-radius:var(--radius-md);margin-bottom:8px;border:1px solid var(--color-border);">
         <span style="font-size:18px;">${icons[item.type] || icons.file}</span>
@@ -691,7 +858,7 @@ const App = {
           <div style="font-weight:600;font-size:14px;">${this.escapeHtml(item.title)}</div>
           <div style="font-size:12px;color:var(--color-text-tertiary);">${I18N.t('item.' + item.type)}</div>
         </div>
-        <button class="btn btn--ghost btn--sm" onclick="App.removeCreateItem(${idx})" style="color:var(--color-accent-red);">&times;</button>
+        <button class="btn btn--ghost btn--sm" onclick="App.removeCreateItem(${idx})" style="color:var(--color-accent-red);">✕</button>
       </div>
     `).join('');
   },
@@ -708,13 +875,13 @@ const App = {
     const scene = document.getElementById('packingScene');
     scene.classList.add('closing');
     setTimeout(() => scene.classList.add('taping'), 800);
-    setTimeout(() => { scene.classList.add('labeling'); this.toast('Packed!'); }, 1400);
+    setTimeout(() => { scene.classList.add('labeling'); this.toast('📦 포장 완료!'); }, 1400);
   },
 
   async sendBox() {
-    if (!DataStore.currentUser) { this.showLogin(); return; }
+    if (!DataStore.currentUser && !this.isAdmin) { this.showLogin(); return; }
     const name = document.getElementById('boxNameInput').value.trim();
-    if (!name) { this.toast(I18N.t('create.boxname') + '!'); this.createStep(1); return; }
+    if (!name) { this.toast('박스 이름을 입력해주세요!'); this.createStep(1); return; }
 
     const btn = document.getElementById('sendBoxBtn');
     btn.disabled = true;
@@ -724,7 +891,7 @@ const App = {
       description: document.getElementById('boxDescInput').value.trim(),
       from_school_id: document.getElementById('boxFromSchool').value,
       to_school_id: document.getElementById('boxToSchool').value,
-      created_by: DataStore.currentUser.id
+      created_by: DataStore.currentUser ? DataStore.currentUser.id : 'admin'
     });
 
     for (const item of this.createState.items) {
@@ -734,11 +901,11 @@ const App = {
     const fill = document.getElementById('sendProgressFill');
     const text = document.getElementById('sendProgressText');
     const steps = [
-      { pct: 20, msg: 'Packing items...' },
-      { pct: 50, msg: 'Adding labels...' },
-      { pct: 75, msg: 'Sealing...' },
-      { pct: 90, msg: 'Sending...' },
-      { pct: 100, msg: 'Delivered!' },
+      { pct: 20, msg: '📦 아이템 포장 중...' },
+      { pct: 50, msg: '🏷️ 라벨 부착 중...' },
+      { pct: 75, msg: '📮 봉인 중...' },
+      { pct: 90, msg: '✈️ 발송 중...' },
+      { pct: 100, msg: '🎉 발송 완료!' },
     ];
 
     for (const s of steps) {
@@ -755,31 +922,44 @@ const App = {
     this.createState = { step: 1, box: null, items: [] };
     document.getElementById('boxNameInput').value = '';
     document.getElementById('boxDescInput').value = '';
-    this.toast('Box sent!');
+    this.toast('🎉 박스가 발송되었어요!');
     setTimeout(() => this.navigate('explore'), 1200);
   },
 
   // ===== My Boxes =====
   async loadMyBoxes() {
     const grid = document.getElementById('myBoxesGrid');
-    if (!DataStore.currentUser) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state__icon">&#x1F512;</div><div class="empty-state__text">${I18N.t('nav.login')}</div><button class="btn btn--primary" onclick="App.showLogin()">${I18N.t('nav.login')}</button></div>`;
+    if (!DataStore.currentUser && !this.isAdmin) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-state__icon">🔒</div>
+        <div class="empty-state__text">로그인 후 이용할 수 있어요</div>
+        <button class="btn btn--primary" onclick="App.showLogin()">로그인하기</button>
+      </div>`;
       return;
     }
     const allBoxes = await API.getBoxes();
-    const myBoxes = allBoxes.filter(b =>
-      b.created_by === DataStore.currentUser.id ||
-      b.from_school_id === DataStore.currentUser.school_id ||
-      b.to_school_id === DataStore.currentUser.school_id
-    );
+    let myBoxes;
+    if (this.isAdmin) {
+      myBoxes = allBoxes;
+    } else {
+      myBoxes = allBoxes.filter(b =>
+        b.created_by === DataStore.currentUser.id ||
+        b.from_school_id === DataStore.currentUser.school_id ||
+        b.to_school_id === DataStore.currentUser.school_id
+      );
+    }
     if (myBoxes.length === 0) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state__icon">&#x1F4ED;</div><div class="empty-state__text">${I18N.t('common.empty')}</div><button class="btn btn--primary" onclick="App.navigate('create')">${I18N.t('nav.pack')}</button></div>`;
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-state__icon">📭</div>
+        <div class="empty-state__text">${I18N.t('common.empty')}</div>
+        <button class="btn btn--primary" onclick="App.navigate('create')">📦 박스 만들기</button>
+      </div>`;
       return;
     }
     grid.innerHTML = myBoxes.map(b => this.renderBoxCard(b)).join('');
   },
 
-  // ===== Admin =====
+  // ===== Admin Panel =====
   currentAdminTab: 'schools',
   loadAdmin() { this.adminTab('schools'); },
 
@@ -791,44 +971,133 @@ const App = {
     });
     const content = document.getElementById('adminContent');
     switch (tab) {
-      case 'schools': content.innerHTML = this.renderAdminSchools(); break;
-      case 'boxes': content.innerHTML = this.renderAdminBoxes(); break;
-      case 'users': content.innerHTML = this.renderAdminUsers(); break;
+      case 'schools':  content.innerHTML = this.renderAdminSchools(); break;
+      case 'boxes':    content.innerHTML = this.renderAdminBoxes(); break;
+      case 'users':    content.innerHTML = this.renderAdminUsers(); break;
       case 'messages': content.innerHTML = this.renderAdminMessages(); break;
     }
   },
 
   renderAdminSchools() {
-    return `<div class="admin-table"><table><thead><tr><th>ID</th><th>Name</th><th>Country</th><th>Boxes</th></tr></thead><tbody>${DataStore.schools.map(s => {
+    const rows = DataStore.schools.map(s => {
       const bc = DataStore.boxes.filter(b => b.from_school_id === s.id || b.to_school_id === s.id).length;
-      return `<tr><td><code>${s.id}</code></td><td>${DataStore.getSchoolName(s.id)}</td><td>${s.country}</td><td>${bc}</td></tr>`;
-    }).join('')}</tbody></table></div>`;
+      return `<tr>
+        <td><code>${s.id}</code></td>
+        <td><strong>${DataStore.getSchoolName(s.id)}</strong></td>
+        <td>${DataStore.getCountryFlag(s.country)} ${s.country}</td>
+        <td><span class="badge badge--sent">${bc}개</span></td>
+      </tr>`;
+    }).join('');
+    return `
+      <div class="admin-section-title">🏫 학교 목록</div>
+      <div class="admin-table"><table>
+        <thead><tr><th>ID</th><th>학교명</th><th>국가</th><th>박스 수</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
   },
 
   renderAdminBoxes() {
-    return `<div class="admin-table"><table><thead><tr><th>Title</th><th>From</th><th>To</th><th>Status</th><th>Items</th><th>Actions</th></tr></thead><tbody>${DataStore.boxes.map(b => `
-      <tr><td><strong>${this.escapeHtml(DataStore.getBoxTitle(b))}</strong></td><td>${DataStore.getSchoolName(b.from_school_id)}</td><td>${DataStore.getSchoolName(b.to_school_id)}</td><td><span class="badge badge--${b.status}">${I18N.t('status.'+b.status)}</span></td><td>${DataStore.getBoxItems(b.id).length}</td><td><button class="btn btn--ghost btn--sm" onclick="App.navigate('boxdetail','${b.id}')">View</button></td></tr>
-    `).join('')}</tbody></table></div>`;
+    const rows = DataStore.boxes.map(b => `
+      <tr>
+        <td><strong>${this.escapeHtml(DataStore.getBoxTitle(b))}</strong></td>
+        <td>${DataStore.getSchoolName(b.from_school_id)}</td>
+        <td>${DataStore.getSchoolName(b.to_school_id)}</td>
+        <td><span class="badge badge--${b.status}">${I18N.t('status.'+b.status)}</span></td>
+        <td>${DataStore.getBoxItems(b.id).length}</td>
+        <td>
+          <button class="btn btn--ghost btn--sm" onclick="App.navigate('boxdetail','${b.id}')">보기</button>
+          <button class="btn btn--ghost btn--sm" style="color:var(--color-accent-red);" onclick="App.adminDeleteBox('${b.id}')">삭제</button>
+        </td>
+      </tr>
+    `).join('');
+    return `
+      <div class="admin-section-title">📦 박스 관리</div>
+      <div class="admin-table"><table>
+        <thead><tr><th>제목</th><th>보낸 학교</th><th>받는 학교</th><th>상태</th><th>아이템</th><th>관리</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
   },
 
   renderAdminUsers() {
-    return `<div class="admin-table"><table><thead><tr><th>Name</th><th>School</th><th>Role</th></tr></thead><tbody><tr><td colspan="3" style="text-align:center;color:var(--color-text-tertiary);padding:32px;">Connects to Google Sheets in production.</td></tr></tbody></table></div>`;
+    // Show session info from localStorage
+    const userInfo = localStorage.getItem('dcb_user');
+    const userRow = userInfo ? (() => {
+      try {
+        const u = JSON.parse(userInfo);
+        const school = DataStore.getSchool(u.school_id);
+        return `<tr>
+          <td>${this.escapeHtml(u.name)}</td>
+          <td>${school ? DataStore.getSchoolName(school.id) : ''}</td>
+          <td><span class="badge badge--sent">${u.role === 'teacher' ? '교사' : '학생'}</span></td>
+          <td><span class="badge badge--opened">접속 중</span></td>
+        </tr>`;
+      } catch(e) { return ''; }
+    })() : '';
+
+    return `
+      <div class="admin-section-title">👤 사용자 관리</div>
+      <div class="admin-table"><table>
+        <thead><tr><th>이름</th><th>학교</th><th>역할</th><th>상태</th></tr></thead>
+        <tbody>${userRow || '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--color-text-tertiary);">현재 접속 중인 사용자 없음</td></tr>'}</tbody>
+      </table></div>
+      <div style="margin-top:16px;padding:12px 16px;background:var(--color-bg-warm);border-radius:var(--radius-md);font-size:13px;color:var(--color-text-secondary);">
+        💡 프로덕션 환경에서는 Google Sheets와 연동하여 전체 사용자 목록을 관리할 수 있습니다.
+      </div>`;
   },
 
   renderAdminMessages() {
-    return `<div class="admin-table"><table><thead><tr><th>User</th><th>Box</th><th>Content</th><th>Status</th><th>Actions</th></tr></thead><tbody>${DataStore.messages.map(m => {
+    const rows = DataStore.messages.map(m => {
       const box = DataStore.boxes.find(b => b.id === m.box_id);
-      return `<tr><td>${this.escapeHtml(m.user_name)}</td><td>${box ? this.escapeHtml(DataStore.getBoxTitle(box)) : ''}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this.escapeHtml(m.content)}</td><td><span class="badge badge--${m.status==='approved'?'approved':'pending'}">${m.status}</span></td><td>${m.status==='pending'?`<button class="btn btn--ghost btn--sm" style="color:var(--color-secondary);" onclick="App.adminApproveMsg('${m.id}')">${I18N.t('admin.approve')}</button>`:''}<button class="btn btn--ghost btn--sm" style="color:var(--color-accent-red);" onclick="App.adminHideMsg('${m.id}')">${I18N.t('admin.hide')}</button></td></tr>`;
-    }).join('')}</tbody></table></div>`;
+      return `<tr>
+        <td>${this.escapeHtml(m.user_name)}</td>
+        <td style="font-size:12px;">${box ? this.escapeHtml(DataStore.getBoxTitle(box)) : '-'}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this.escapeHtml(m.content)}</td>
+        <td><span class="badge badge--${m.status==='approved'?'opened':'pending'}">${m.status==='approved'?'승인':'대기'}</span></td>
+        <td style="white-space:nowrap;">
+          ${m.status==='pending' ? `<button class="btn btn--ghost btn--sm" style="color:var(--color-secondary);" onclick="App.adminApproveMsg('${m.id}')">✅ 승인</button>` : ''}
+          <button class="btn btn--ghost btn--sm" style="color:var(--color-accent-red);" onclick="App.adminDeleteMsg('${m.id}')">🗑️ 삭제</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return `
+      <div class="admin-section-title">💬 메시지 관리</div>
+      <div class="admin-table"><table>
+        <thead><tr><th>작성자</th><th>박스</th><th>내용</th><th>상태</th><th>관리</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--color-text-tertiary);">메시지 없음</td></tr>'}</tbody>
+      </table></div>`;
   },
 
-  async adminApproveMsg(id) { await API.updateMessageStatus(id, 'approved'); this.adminTab('messages'); },
-  async adminHideMsg(id) { await API.updateMessageStatus(id, 'hidden'); this.adminTab('messages'); },
+  async adminApproveMsg(id) {
+    await API.updateMessageStatus(id, 'approved');
+    this.adminTab('messages');
+    this.toast('✅ 메시지가 승인되었습니다.');
+  },
+
+  async adminHideMsg(id) {
+    await API.updateMessageStatus(id, 'hidden');
+    this.adminTab('messages');
+  },
+
+  adminDeleteMsg(id) {
+    if (!confirm('이 메시지를 삭제하시겠습니까?')) return;
+    DataStore.messages = DataStore.messages.filter(m => m.id !== id);
+    this.adminTab('messages');
+    this.toast('🗑️ 메시지가 삭제되었습니다.');
+  },
+
+  adminDeleteBox(id) {
+    if (!confirm('이 박스를 삭제하시겠습니까? 관련 아이템과 메시지도 함께 삭제됩니다.')) return;
+    DataStore.boxes    = DataStore.boxes.filter(b => b.id !== id);
+    DataStore.items    = DataStore.items.filter(i => i.box_id !== id);
+    DataStore.messages = DataStore.messages.filter(m => m.box_id !== id);
+    this.adminTab('boxes');
+    this.toast('🗑️ 박스가 삭제되었습니다.');
+  },
 
   // ===== Confetti =====
   launchConfetti() {
-    const colors = ['#D97706', '#3B82F6', '#10B981', '#EC4899', '#7C3AED', '#FBBF24'];
-    for (let i = 0; i < 50; i++) {
+    const colors = ['#D97706','#3B82F6','#10B981','#EC4899','#7C3AED','#FBBF24','#F472B6','#34D399'];
+    for (let i = 0; i < 60; i++) {
       const el = document.createElement('div');
       el.className = 'confetti-piece';
       el.style.left = Math.random() * 100 + 'vw';
@@ -848,7 +1117,7 @@ const App = {
     const t = document.getElementById('toast');
     t.innerHTML = msg;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+    setTimeout(() => t.classList.remove('show'), 2800);
   },
 
   // ===== Utils =====
@@ -872,11 +1141,11 @@ const App = {
     const mins = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m`;
-    if (hours < 24) return `${hours}h`;
-    if (days < 7) return `${days}d`;
-    return d.toLocaleDateString();
+    if (mins < 1) return '방금 전';
+    if (mins < 60) return `${mins}분 전`;
+    if (hours < 24) return `${hours}시간 전`;
+    if (days < 7) return `${days}일 전`;
+    return d.toLocaleDateString('ko-KR');
   }
 };
 
@@ -884,12 +1153,21 @@ const App = {
 document.addEventListener('click', (e) => {
   const langBtn = document.getElementById('langToggle');
   if (langBtn && !langBtn.contains(e.target)) langBtn.classList.remove('open');
+
+  const themePicker = document.getElementById('themePicker');
+  if (themePicker && !themePicker.contains(e.target)) themePicker.classList.remove('open');
+
   if (e.target === document.getElementById('itemModal')) App.closeItemModal();
   if (e.target === document.getElementById('loginModal')) App.hideLogin();
+  if (e.target === document.getElementById('adminLoginModal')) App.hideAdminLogin();
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { App.closeItemModal(); App.hideLogin(); }
+  if (e.key === 'Escape') {
+    App.closeItemModal();
+    App.hideLogin();
+    App.hideAdminLogin();
+  }
 });
 
 document.addEventListener('DOMContentLoaded', () => App.init());

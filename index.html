@@ -18,11 +18,11 @@
       </a>
 
       <ul class="nav__links" id="navLinks">
-        <li><a href="#" class="nav__link active" data-page="home" onclick="App.navigate('home')">🏠 홈</a></li>
-        <li id="navExploreItem" class="hidden"><a href="#" class="nav__link" data-page="explore" onclick="App.navigate('explore')">🔍 박스 탐색</a></li>
-        <li id="navCreateItem" class="hidden"><a href="#" class="nav__link" data-page="create" onclick="App.navigate('create')">✨ 박스 만들기</a></li>
-        <li id="navMyboxesItem" class="hidden"><a href="#" class="nav__link" data-page="myboxes" onclick="App.navigate('myboxes')">📬 내 박스</a></li>
-        <li id="navAdminItem" class="hidden"><a href="#" class="nav__link" data-page="admin" onclick="App.navigate('admin')">⚙️ 관리</a></li>
+        <li><a href="#" class="nav__link active" data-page="home" onclick="App.navigate('home')" data-i18n="nav.home">홈</a></li>
+        <li id="navExploreItem"><a href="#" class="nav__link" data-page="explore" onclick="App.navigate('explore')" data-i18n="nav.explore">박스 탐색</a></li>
+        <li id="navCreateItem"><a href="#" class="nav__link" data-page="create" onclick="App.navigate('create')" data-i18n="nav.create">박스 만들기</a></li>
+        <li id="navMyboxesItem"><a href="#" class="nav__link" data-page="myboxes" onclick="App.navigate('myboxes')" data-i18n="nav.myboxes">내 박스</a></li>
+        <li id="navAdminItem" class="hidden"><a href="#" class="nav__link" data-page="admin" onclick="App.navigate('admin')" data-i18n="nav.admin">관리</a></li>
       </ul>
 
       <div class="nav__actions">
@@ -86,7 +86,7 @@
         <div class="hero__decoration hero__decoration--2">📦</div>
         <div class="hero__decoration hero__decoration--3">🎨</div>
         <div class="container">
-          <div class="hero__badge">✨ 학교 문화 교류 플랫폼</div>
+          <div class="hero__badge" data-i18n="hero.badge">✨ 학교 문화 교류 플랫폼</div>
           <h1 class="hero__title" data-i18n="landing.title">Digital Culture Box</h1>
           <p class="hero__subtitle" data-i18n="landing.subtitle">문화를 상자에 담아, 세계로 보내보세요</p>
           <p class="hero__desc" data-i18n="landing.desc">우리 학교의 이야기를 상자에 담아 교류학교에 보내고,<br>상대 학교의 문화 상자를 열어보는 특별한 경험</p>
@@ -96,10 +96,10 @@
             <div class="login-prompt-box">
               <div class="login-prompt-box__icon">🔑</div>
               <div class="login-prompt-box__text">
-                <strong>로그인하고 시작하기</strong>
-                <p>내 학교의 문화 박스를 구경하고, 만들고, 소통해요!</p>
+                <strong data-i18n="hero.login.title">로그인하고 시작하기</strong>
+                <p data-i18n="hero.login.desc">내 학교의 문화 박스를 구경하고, 만들고, 소통해요!</p>
               </div>
-              <button class="btn btn--primary btn--lg" onclick="App.showLogin()">지금 로그인하기 →</button>
+              <button class="btn btn--primary btn--lg" onclick="App.showLogin()" data-i18n="hero.login.btn">지금 로그인하기 →</button>
             </div>
           </div>
 
@@ -136,8 +136,8 @@
             <div class="how-step">
               <div class="how-step__number">1</div>
               <div class="how-step__icon">🔑</div>
-              <h3 class="how-step__title">학교 로그인</h3>
-              <p class="how-step__desc">내 학교 계정으로 로그인하면 우리 학교 박스를 볼 수 있어요</p>
+              <h3 class="how-step__title" data-i18n="how.login.title">학교 로그인</h3>
+              <p class="how-step__desc" data-i18n="how.login.desc">내 학교 계정으로 로그인하면 우리 학교 박스를 볼 수 있어요</p>
             </div>
             <div class="how-step">
               <div class="how-step__number">2</div>
@@ -175,15 +175,15 @@
     <div class="page" id="page-explore">
       <div class="container">
         <div class="page-header">
-          <h1 class="page-header__title" data-i18n="nav.explore">🔍 박스 탐색</h1>
-          <input class="form-input" style="width:200px;padding:10px 14px;" placeholder="검색..." id="exploreSearch" oninput="App.filterBoxes()">
+          <h1 class="page-header__title" data-i18n="nav.explore">박스 탐색</h1>
+          <input class="form-input" style="width:200px;padding:10px 14px;" data-i18n-placeholder="explore.search" placeholder="검색..." id="exploreSearch" oninput="App.filterBoxes()">
         </div>
         <div class="school-banner" id="exploreBanner"></div>
         <div class="filter-bar" id="exploreFilters">
-          <button class="filter-chip active" data-filter="all" onclick="App.setFilter('all')">전체</button>
-          <button class="filter-chip" data-filter="arrived" onclick="App.setFilter('arrived')">📬 도착!</button>
-          <button class="filter-chip" data-filter="sent" onclick="App.setFilter('sent')">✈️ 발송됨</button>
-          <button class="filter-chip" data-filter="opened" onclick="App.setFilter('opened')">🎉 개봉됨</button>
+          <button class="filter-chip active" data-filter="all" onclick="App.setFilter('all')" data-i18n="filter.all">전체</button>
+          <button class="filter-chip" data-filter="arrived" onclick="App.setFilter('arrived')" data-i18n="filter.arrived">도착!</button>
+          <button class="filter-chip" data-filter="sent" onclick="App.setFilter('sent')" data-i18n="filter.sent">발송됨</button>
+          <button class="filter-chip" data-filter="opened" onclick="App.setFilter('opened')" data-i18n="filter.opened">개봉됨</button>
         </div>
         <div class="box-grid" id="exploreGrid"></div>
       </div>
@@ -230,13 +230,13 @@
               <div class="box-detail-header__meta" id="boxDetailMeta"></div>
             </div>
             <div class="box-detail-header__actions">
-              <button class="btn btn--secondary btn--sm" onclick="App.switchTab('messages')">💬 메시지</button>
+              <button class="btn btn--secondary btn--sm" onclick="App.switchTab('messages')" data-i18n="nav.social">소통</button>
             </div>
           </div>
 
           <div class="tabs">
-            <button class="tab-btn active" data-tab="items" onclick="App.switchTab('items')">📦 아이템</button>
-            <button class="tab-btn" data-tab="messages" onclick="App.switchTab('messages')">💬 메시지</button>
+            <button class="tab-btn active" data-tab="items" onclick="App.switchTab('items')" data-i18n="tab.items">아이템</button>
+            <button class="tab-btn" data-tab="messages" onclick="App.switchTab('messages')" data-i18n="nav.social">소통</button>
           </div>
 
           <div class="tab-content active" id="tab-items">
@@ -244,15 +244,23 @@
           </div>
 
           <div class="tab-content" id="tab-messages">
-            <div class="message-board">
-              <div class="message-compose">
-                <textarea class="message-compose__input" id="messageInput" placeholder="메시지를 남겨주세요..." rows="2"></textarea>
-                <div class="message-compose__actions">
-                  <button class="btn btn--primary btn--sm" onclick="App.sendMessage()">💬 보내기</button>
-                </div>
+            <!-- Social Compose -->
+            <div class="social-compose" id="socialCompose">
+              <div class="social-type-bar">
+                <button class="social-type-btn active" data-type="text" onclick="App.setSocialType('text')" data-i18n="social.type.text">텍스트</button>
+                <button class="social-type-btn" data-type="image" onclick="App.setSocialType('image')" data-i18n="social.type.image">이미지</button>
+                <button class="social-type-btn" data-type="youtube" onclick="App.setSocialType('youtube')" data-i18n="social.type.youtube">유튜브</button>
               </div>
-              <div class="thread-list" id="messageList"></div>
+              <textarea class="social-compose__textarea" id="socialTextarea" rows="3" data-i18n-placeholder="social.compose.placeholder" placeholder="우리 학교 이야기를 나눠요..."></textarea>
+              <div class="social-compose__media hidden" id="socialMediaInput">
+                <input class="form-input" id="socialMediaUrl" data-i18n-placeholder="social.media.placeholder" placeholder="이미지 URL 또는 YouTube URL">
+              </div>
+              <div class="social-compose__footer">
+                <button class="btn btn--primary btn--sm" onclick="App.postSocialMessage()" data-i18n="social.post.btn">게시하기</button>
+              </div>
             </div>
+            <!-- Social Feed -->
+            <div id="socialFeed"></div>
           </div>
         </div>
       </div>
@@ -404,8 +412,8 @@
     <div class="page" id="page-myboxes">
       <div class="container">
         <div class="page-header">
-          <h1 class="page-header__title">📬 내 박스</h1>
-          <button class="btn btn--primary btn--sm" onclick="App.navigate('create')">✨ 박스 만들기</button>
+          <h1 class="page-header__title" data-i18n="nav.myboxes">내 박스</h1>
+          <button class="btn btn--primary btn--sm" onclick="App.navigate('create')" data-i18n="nav.create">박스 만들기</button>
         </div>
         <div class="box-grid" id="myBoxesGrid"></div>
       </div>
@@ -440,7 +448,7 @@
       <button class="modal__close" onclick="App.hideLogin()">&times;</button>
       <div class="modal__icon">🔑</div>
       <h2 class="modal__title" data-i18n="login.title">학교 로그인</h2>
-      <p class="modal__subtitle">내 학교의 문화 박스를 만나보세요!</p>
+      <p class="modal__subtitle" data-i18n="login.subtitle">내 학교의 문화 박스를 만나보세요!</p>
 
       <!-- Role selector -->
       <div class="role-selector" id="roleSelector">
@@ -466,8 +474,8 @@
       <div class="form-group" id="studentCodeGroup">
         <label class="form-label" data-i18n="login.code">참여 코드</label>
         <input class="form-input" id="loginCode" placeholder="선생님에게 받은 코드" autocomplete="off" style="letter-spacing:2px;font-family:monospace;">
-        <div class="form-hint">💡 참여 코드는 선생님에게 받을 수 있어요.</div>
-        <div class="form-error" id="loginCodeError">올바른 참여 코드를 입력해주세요.</div>
+        <div class="form-hint" data-i18n="login.code.hint">💡 참여 코드는 선생님에게 받을 수 있어요.</div>
+        <div class="form-error" id="loginCodeError" data-i18n="login.code.error">올바른 참여 코드를 입력해주세요.</div>
       </div>
 
       <div class="form-group hidden" id="teacherCodeGroup">
@@ -476,10 +484,10 @@
         <div class="form-error" id="loginTeacherCodeError">올바른 교사 코드를 입력해주세요.</div>
       </div>
 
-      <button class="btn btn--primary btn--full" onclick="App.login()" style="margin-top:8px;">🚀 시작하기</button>
+      <button class="btn btn--primary btn--full" onclick="App.login()" style="margin-top:8px;" data-i18n="login.btn">🚀 시작하기</button>
 
       <div class="modal__admin-link">
-        <button onclick="App.hideLogin(); App.showAdminLogin();" style="font-size:12px;color:var(--color-text-tertiary);background:none;border:none;cursor:pointer;padding:4px;">관리자이신가요?</button>
+        <button onclick="App.hideLogin(); App.showAdminLogin();" style="font-size:12px;color:var(--color-text-tertiary);background:none;border:none;cursor:pointer;padding:4px;" data-i18n="login.admin.link">관리자이신가요?</button>
       </div>
     </div>
   </div>

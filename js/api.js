@@ -27,7 +27,7 @@
 
 const API = {
   // Set this to your Google Apps Script deployment URL
-  GAS_URL: '',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzFjDT3WUncXROqm2-SJ01Lg1L1K17b9Yvgx9W7BJEbmfCzultQxL0Er5zTkZgx8LI-/exec',
 
   // Whether to use local data (true) or GAS backend (false)
   get isLocal() {
@@ -156,13 +156,35 @@ const API = {
           id: DataStore.generateId('msg'),
           ...params,
           user_id: DataStore.currentUser?.id || 'unknown',
-          user_name: DataStore.currentUser?.name || 'Anonymous',
+          user_name: params.user_name_override || DataStore.currentUser?.name || 'Anonymous',
           user_school: DataStore.currentUser?.school_id || '',
-          status: DataStore.currentUser?.role === 'teacher' ? 'approved' : 'approved', // auto-approve for demo
+          status: 'approved',
           created_at: new Date().toISOString()
         };
         DataStore.messages.push(newMsg);
+        DataStore.save();
         return Promise.resolve(newMsg);
+      }
+
+      case 'deleteBox': {
+        const bid = params.id;
+        DataStore.boxes = DataStore.boxes.filter(b => b.id !== bid);
+        DataStore.items = DataStore.items.filter(i => i.box_id !== bid);
+        DataStore.messages = DataStore.messages.filter(m => m.box_id !== bid);
+        DataStore.save();
+        return Promise.resolve(true);
+      }
+
+      case 'updateMessage': {
+        const mIdx = DataStore.messages.findIndex(m => m.id === params.id);
+        if (mIdx >= 0) { DataStore.messages[mIdx].content = params.content; DataStore.save(); }
+        return Promise.resolve(true);
+      }
+
+      case 'deleteMessage': {
+        DataStore.messages = DataStore.messages.filter(m => m.id !== params.id);
+        DataStore.save();
+        return Promise.resolve(true);
       }
 
       case 'updateMessageStatus': {
@@ -224,5 +246,8 @@ const API = {
   updateMessageStatus: (id, status) => API._post('updateMessageStatus', { id, status }),
   sendBox: (id) => API._post('sendBox', { id }),
   openBox: (id) => API._post('openBox', { id }),
+  deleteBox: (id) => API._post('deleteBox', { id }),
+  updateMessage: (id, content) => API._post('updateMessage', { id, content }),
+  deleteMessage: (id) => API._post('deleteMessage', { id }),
   getStats: () => API._fetch('getStats'),
 };

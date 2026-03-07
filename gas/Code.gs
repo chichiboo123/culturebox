@@ -36,7 +36,7 @@
  */
 
 // ====== CONFIGURATION ======
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE'; // Replace with your spreadsheet ID
+const SPREADSHEET_ID = '1eLN5rHcPntDsSL1E5qzthXQHFjmUCH065bfhoWyMdxM';
 
 // ====== HELPERS ======
 
@@ -270,17 +270,38 @@ function doPost(e) {
           id,
           box_id: body.box_id || '',
           user_id: body.user_id || '',
-          user_name: body.user_name || '',
+          user_name: body.user_name_override || body.user_name || '',
           user_school: body.user_school || '',
           content: body.content || '',
           type: body.type || 'text',
           media_url: body.media_url || '',
           parent_id: body.parent_id || '',
-          status: body.status || 'pending',
+          status: 'approved',
           created_at: new Date().toISOString()
         };
         appendRow('Messages', msg);
         return jsonResponse(msg);
+      }
+
+      case 'deleteBox': {
+        const bid = body.id;
+        // Remove box, its items, and its messages
+        deleteRow('Boxes', bid);
+        const items = sheetToArray('Items').filter(i => i.box_id === bid);
+        items.forEach(i => deleteRow('Items', i.id));
+        const msgs = sheetToArray('Messages').filter(m => m.box_id === bid);
+        msgs.forEach(m => deleteRow('Messages', m.id));
+        return jsonResponse(true);
+      }
+
+      case 'updateMessage': {
+        const result = updateRow('Messages', body.id, { content: body.content });
+        return jsonResponse(result);
+      }
+
+      case 'deleteMessage': {
+        deleteRow('Messages', body.id);
+        return jsonResponse(true);
       }
 
       case 'updateMessageStatus': {

@@ -555,51 +555,77 @@ const App = {
     }).join('');
   },
 
-  showItemDetail(itemId) {
-    const item = DataStore.items.find(i => i.id === itemId);
-    if (!item) return;
-    this.currentItemModal = itemId;
+  currentItemLang: 'ko',
 
-    const modal = document.getElementById('itemModal');
-    const content = document.getElementById('itemModalContent');
+  // Render the translatable content body of an item
+  renderItemContentBody(item, lang) {
+    const title = (lang === 'en' ? item.title_en : lang === 'ja' ? item.title_ja : null) || item.title || '';
+    const text  = (lang === 'en' ? item.content_en : lang === 'ja' ? item.content_ja : null) || (lang === 'ko' ? item.content : null) || '';
+    const needsFetch = (lang !== 'ko') && !(lang === 'en' ? item.content_en : item.content_ja);
+    const fetchBtn = needsFetch
+      ? `<button class="btn btn--secondary btn--sm" style="margin-top:12px;" onclick="App.fetchItemTranslation('${item.id}','${lang}')">🌐 ${I18N.t('translate.btn')}</button>`
+      : '';
 
     let mediaHtml = '';
     switch (item.type) {
       case 'text':
-        mediaHtml = `<div class="item-detail__content" style="white-space:pre-wrap;">${this.escapeHtml(item.content)}</div>`;
+        mediaHtml = `<div class="item-detail__content" style="white-space:pre-wrap;">${this.escapeHtml(text)}</div>`;
         break;
       case 'image':
         if (item.file_url) mediaHtml += `<div class="item-detail__media"><img src="${this.escapeHtml(item.file_url)}" alt=""></div>`;
-        if (item.content) mediaHtml += `<div class="item-detail__content" style="margin-top:12px;">${this.escapeHtml(item.content)}</div>`;
+        if (text) mediaHtml += `<div class="item-detail__content" style="margin-top:12px;">${this.escapeHtml(text)}</div>`;
         break;
       case 'youtube':
         if (item.file_url) {
           const vid = this.extractYouTubeId(item.file_url);
           if (vid) mediaHtml = `<div class="item-detail__media"><iframe src="https://www.youtube.com/embed/${vid}" allowfullscreen></iframe></div>`;
         }
+        if (text) mediaHtml += `<div class="item-detail__content" style="margin-top:8px;">${this.escapeHtml(text)}</div>`;
         break;
       case 'video':
         if (item.file_url) mediaHtml = `<div class="item-detail__media"><video controls src="${this.escapeHtml(item.file_url)}"></video></div>`;
         break;
       case 'link':
         mediaHtml = `<div style="margin-bottom:12px;"><a href="${this.escapeHtml(item.file_url)}" target="_blank" rel="noopener" class="btn btn--secondary">🔗 ${this.escapeHtml(item.file_url)}</a></div>`;
-        if (item.content) mediaHtml += `<div class="item-detail__content">${this.escapeHtml(item.content)}</div>`;
+        if (text) mediaHtml += `<div class="item-detail__content">${this.escapeHtml(text)}</div>`;
         break;
       case 'pdf':
         if (item.file_url) mediaHtml = `<div><a href="${this.escapeHtml(item.file_url)}" target="_blank" rel="noopener" class="btn btn--secondary">📄 PDF</a></div>`;
         break;
       default:
-        if (item.content) mediaHtml = `<div class="item-detail__content">${this.escapeHtml(item.content)}</div>`;
+        if (text) mediaHtml = `<div class="item-detail__content">${this.escapeHtml(text)}</div>`;
     }
+    return `<h2 style="font-size:1.2rem;font-weight:700;margin-bottom:16px;">${this.escapeHtml(title)}</h2>${mediaHtml}${fetchBtn}`;
+  },
+
+  showItemDetail(itemId) {
+    const item = DataStore.items.find(i => i.id === itemId);
+    if (!item) return;
+    this.currentItemModal = itemId;
+    this.currentItemLang = I18N.getLang() || 'ko';
+
+    const modal = document.getElementById('itemModal');
+    const content = document.getElementById('itemModalContent');
+
+    const langs = [
+      { code: 'ko', label: '한' },
+      { code: 'en', label: 'EN' },
+      { code: 'ja', label: '日' },
+    ];
+    const langBtns = langs.map(l =>
+      `<button class="item-lang-btn${l.code === this.currentItemLang ? ' active' : ''}" onclick="App.setItemLang('${l.code}','${itemId}')">${l.label}</button>`
+    ).join('');
 
     content.innerHTML = `
-      <div class="item-modal-tabs">
-        <button class="item-modal-tab active" onclick="App.switchItemTab('content','${itemId}')">📄 ${I18N.t('item.view.content')}</button>
-        <button class="item-modal-tab" id="itemCommentTabBtn" onclick="App.switchItemTab('comments','${itemId}')">💬 ${I18N.t('item.comments')}</button>
+      <div class="item-modal-header-row">
+        <div class="item-modal-tabs" style="flex:1;">
+          <button class="item-modal-tab active" onclick="App.switchItemTab('content','${itemId}')">📄 ${I18N.t('item.view.content')}</button>
+          <button class="item-modal-tab" id="itemCommentTabBtn" onclick="App.switchItemTab('comments','${itemId}')">💬 ${I18N.t('item.comments')}</button>
+        </div>
+        <div class="item-lang-toggle">${langBtns}</div>
       </div>
       <div id="itemTabContent" class="item-tab-panel active">
-        <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:16px;">${this.escapeHtml(DataStore.getItemTitle(item))}</h2>
-        ${mediaHtml}
+        <div id="itemContentBody">${this.renderItemContentBody(item, this.currentItemLang)}</div>
         <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
           <button class="reaction-btn" onclick="App.reactToItem('${item.id}','heart')">❤️ ${I18N.t('react.heart')}</button>
           <button class="reaction-btn" onclick="App.reactToItem('${item.id}','star')">⭐ ${I18N.t('react.star')}</button>
@@ -618,6 +644,36 @@ const App = {
       </div>
     `;
     modal.classList.add('active');
+  },
+
+  setItemLang(lang, itemId) {
+    this.currentItemLang = lang;
+    document.querySelectorAll('.item-lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent === ({ko:'한',en:'EN',ja:'日'}[lang]));
+    });
+    const item = DataStore.items.find(i => i.id === itemId);
+    const body = document.getElementById('itemContentBody');
+    if (item && body) body.innerHTML = this.renderItemContentBody(item, lang);
+  },
+
+  async fetchItemTranslation(itemId, lang) {
+    const item = DataStore.items.find(i => i.id === itemId);
+    if (!item) return;
+    const srcText = item.content || item.title || '';
+    if (!srcText) return;
+    const btn = event.target;
+    btn.textContent = '⏳';
+    btn.disabled = true;
+    const translated = await this.translateText(srcText, lang);
+    btn.disabled = false;
+    if (translated) {
+      item[`content_${lang}`] = translated;
+      const body = document.getElementById('itemContentBody');
+      if (body) body.innerHTML = this.renderItemContentBody(item, lang);
+    } else {
+      btn.textContent = '🌐 ' + I18N.t('translate.btn');
+      this.toast(I18N.t('translate.unavailable'));
+    }
   },
 
   switchItemTab(tab, itemId) {
@@ -766,6 +822,63 @@ const App = {
     return 'link';
   },
 
+  socialAttachmentData: null, // { type: 'image'|'file', data: dataURL|null, name: string, mediaType: string }
+
+  // File selected via input or drag
+  handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) this.processAttachmentFile(file);
+    event.target.value = '';
+  },
+
+  processAttachmentFile(file) {
+    const preview = document.getElementById('socialMediaPreview');
+    const urlInput = document.getElementById('socialMediaUrl');
+    if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.socialAttachmentData = { type: file.type.startsWith('image/') ? 'image' : 'video', data: e.target.result, name: file.name, mediaType: file.type };
+        if (preview) {
+          preview.classList.remove('hidden');
+          if (file.type.startsWith('image/')) {
+            preview.innerHTML = `<img src="${e.target.result}" style="max-height:120px;border-radius:8px;"> <span style="font-size:11px;color:var(--color-text-tertiary);">${this.escapeHtml(file.name)}</span> <button style="margin-left:auto;font-size:18px;background:none;border:none;cursor:pointer;line-height:1;" onclick="App.clearAttachment()">×</button>`;
+          } else {
+            preview.innerHTML = `🎬 <span>${this.escapeHtml(file.name)}</span> <button style="margin-left:auto;font-size:18px;background:none;border:none;cursor:pointer;" onclick="App.clearAttachment()">×</button>`;
+          }
+        }
+        if (urlInput) urlInput.value = '';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Non-media file: show as attachment badge
+      this.socialAttachmentData = { type: 'link', data: null, name: file.name, mediaType: file.type };
+      if (preview) {
+        preview.classList.remove('hidden');
+        preview.innerHTML = `📎 <span>${this.escapeHtml(file.name)}</span> <span style="font-size:10px;color:var(--color-text-tertiary);">(파일은 URL로 첨부해주세요)</span> <button style="margin-left:auto;font-size:18px;background:none;border:none;cursor:pointer;" onclick="App.clearAttachment()">×</button>`;
+      }
+    }
+  },
+
+  clearAttachment() {
+    this.socialAttachmentData = null;
+    const preview = document.getElementById('socialMediaPreview');
+    if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
+  },
+
+  // Handle paste event on social textarea (images from clipboard)
+  handleSocialPaste(event) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        event.preventDefault();
+        const file = item.getAsFile();
+        if (file) this.processAttachmentFile(file);
+        return;
+      }
+    }
+  },
+
   // Prefill social name input from logged-in user
   prefillSocialName() {
     const inp = document.getElementById('socialNameInput');
@@ -897,8 +1010,16 @@ const App = {
     const name = (nameInput ? nameInput.value.trim() : '') || (DataStore.currentUser ? DataStore.currentUser.name : 'Admin');
     if (!text || !this.currentBox) return;
 
-    const mediaUrl = mediaUrlInput ? mediaUrlInput.value.trim() : '';
-    const msgType = this.detectMediaType(mediaUrl);
+    let mediaUrl = mediaUrlInput ? mediaUrlInput.value.trim() : '';
+    let msgType = 'text';
+
+    // Prioritise file attachment over URL input
+    if (this.socialAttachmentData && this.socialAttachmentData.data) {
+      mediaUrl = this.socialAttachmentData.data; // base64 data URL
+      msgType = this.socialAttachmentData.type;
+    } else if (mediaUrl) {
+      msgType = this.detectMediaType(mediaUrl);
+    }
 
     await API.addMessage({
       box_id: this.currentBox.id,
@@ -910,8 +1031,7 @@ const App = {
     });
     textarea.value = '';
     if (mediaUrlInput) mediaUrlInput.value = '';
-    const preview = document.getElementById('socialMediaPreview');
-    if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
+    this.clearAttachment();
     this.loadSocialFeed(this.currentBox.id);
     this.toast('📢 ' + I18N.t('social.post.btn') + '!');
   },
@@ -1109,7 +1229,99 @@ const App = {
       grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state__icon">📭</div><div class="empty-state__text">${I18N.t('common.empty')}</div><button class="btn btn--primary" onclick="App.navigate('create')">${I18N.t('myboxes.empty.btn')}</button></div>`;
       return;
     }
-    grid.innerHTML = myBoxes.map(b => this.renderBoxCard(b)).join('');
+    grid.innerHTML = myBoxes.map(b => this.renderMyBoxCard(b)).join('');
+  },
+
+  renderMyBoxCard(box) {
+    const isOwner = this.isAdmin ||
+      (DataStore.currentUser && (
+        box.created_by === DataStore.currentUser.id ||
+        box.from_school_id === DataStore.currentUser.school_id
+      ));
+    const fromSchool = DataStore.getSchool(box.from_school_id);
+    const items = DataStore.getBoxItems(box.id);
+    const msgs = DataStore.getBoxMessages(box.id);
+    const coverBgs = [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+    ];
+    const bgIdx = Math.abs(box.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % coverBgs.length;
+
+    return `
+      <div class="box-card mybox-card">
+        <div class="box-card__cover" style="background:${coverBgs[bgIdx]}" onclick="App.navigate('boxdetail','${box.id}')">
+          <span class="box-card__cover-placeholder">📦</span>
+          <span class="box-card__status box-card__status--${box.status}">${I18N.t('status.' + box.status)}</span>
+          <div class="box-card__cover-info">
+            <div class="box-card__cover-from">${I18N.t('unbox.from')} ${fromSchool ? DataStore.getSchoolName(fromSchool.id) : ''}</div>
+            <div class="box-card__cover-title">${this.escapeHtml(DataStore.getBoxTitle(box))}</div>
+          </div>
+        </div>
+        <div class="box-card__body">
+          <div class="box-card__meta">
+            <span class="box-card__meta-item">📦 ${items.length}</span>
+            <span class="box-card__meta-item">💬 ${msgs.length}</span>
+          </div>
+          ${isOwner ? `
+          <div class="mybox-actions">
+            <button class="btn btn--secondary btn--sm" onclick="App.editBox('${box.id}')">✏️ ${I18N.t('common.edit') || '수정'}</button>
+            <button class="btn btn--sm" style="background:#FEE2E2;color:#EF4444;" onclick="App.deleteBox('${box.id}')">🗑️ ${I18N.t('admin.delete')}</button>
+          </div>` : `<button class="box-card__action-btn" onclick="App.navigate('boxdetail','${box.id}')">${I18N.t('unbox.tap')} ›</button>`}
+        </div>
+      </div>
+    `;
+  },
+
+  editBox(boxId) {
+    const box = DataStore.boxes.find(b => b.id === boxId);
+    if (!box) return;
+    document.getElementById('editBoxId').value = boxId;
+    document.getElementById('editBoxTitle').value = box.title || '';
+    document.getElementById('editBoxDesc').value = box.description || '';
+    document.getElementById('editBoxCover').value = box.cover_image_url || '';
+    document.getElementById('editBoxStatus').value = box.status || 'draft';
+    document.getElementById('boxEditModal').classList.add('active');
+  },
+
+  closeBoxEdit() {
+    document.getElementById('boxEditModal').classList.remove('active');
+  },
+
+  async saveBoxEdit() {
+    const boxId = document.getElementById('editBoxId').value;
+    const title = document.getElementById('editBoxTitle').value.trim();
+    const description = document.getElementById('editBoxDesc').value.trim();
+    const cover = document.getElementById('editBoxCover').value.trim();
+    const status = document.getElementById('editBoxStatus').value;
+    if (!title) { this.toast('박스 이름을 입력해주세요.'); return; }
+
+    const box = DataStore.boxes.find(b => b.id === boxId);
+    if (box) {
+      box.title = title;
+      box.description = description;
+      box.cover_image_url = cover;
+      box.status = status;
+      DataStore.save();
+      await API.updateBox({ id: boxId, title, description, cover_image_url: cover, status });
+    }
+    this.closeBoxEdit();
+    this.loadMyBoxes();
+    this.toast('✅ 박스가 수정되었습니다.');
+  },
+
+  deleteBox(boxId) {
+    if (!confirm('정말로 이 박스를 삭제하시겠습니까?')) return;
+    const idx = DataStore.boxes.findIndex(b => b.id === boxId);
+    if (idx !== -1) {
+      DataStore.boxes.splice(idx, 1);
+      DataStore.save();
+    }
+    this.loadMyBoxes();
+    this.toast('🗑️ 박스가 삭제되었습니다.');
   },
 
   // ===== Admin Panel =====

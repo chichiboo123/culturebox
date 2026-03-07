@@ -2851,3 +2851,107 @@ body { transition: background-color 0.3s ease; }
   outline: none;
   border-color: var(--color-primary);
 }
+
+/* =========================================
+   ITEM MODAL LANG TOGGLE
+   ========================================= */
+.item-modal-header-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-md);
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+.item-lang-toggle {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding-bottom: 2px;
+  flex-shrink: 0;
+}
+
+.item-lang-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-fast);
+  line-height: 1.4;
+}
+
+.item-lang-btn.active,
+.item-lang-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* =========================================
+   MY BOX CARD (with edit/delete)
+   ========================================= */
+.mybox-card .box-card__cover {
+  cursor: pointer;
+}
+
+.mybox-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.mybox-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* =========================================
+   SOCIAL COMPOSE FILE UPLOAD BUTTON
+   ========================================= */
+.social-compose__file-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.social-compose__file-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  filter: brightness(1.1);
+}
+
+/* =========================================
+   SITE FOOTER
+   ========================================= */
+.site-footer {
+  text-align: center;
+  padding: var(--space-lg) var(--space-md);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-warm);
+  margin-top: var(--space-2xl);
+}
+
+.site-footer__link {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.site-footer__link:hover {
+  color: var(--color-primary);
+}
+

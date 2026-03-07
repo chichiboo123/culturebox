@@ -241,10 +241,16 @@
                 <span style="font-size:12px;font-weight:600;color:var(--color-text-tertiary);" data-i18n="compose.name.label">이름</span>
                 <input class="social-compose__name-input" id="socialNameInput" data-i18n-placeholder="compose.name.placeholder" placeholder="실명 입력">
               </div>
-              <textarea class="social-compose__textarea" id="socialTextarea" rows="3" data-i18n-placeholder="social.compose.placeholder" placeholder="우리 학교 이야기를 나눠요..."></textarea>
+              <textarea class="social-compose__textarea" id="socialTextarea" rows="3"
+                data-i18n-placeholder="social.compose.placeholder" placeholder="우리 학교 이야기를 나눠요..."
+                onpaste="App.handleSocialPaste(event)"></textarea>
               <div class="social-compose__attach-row">
-                <span class="social-compose__attach-label">📎</span>
+                <span class="social-compose__attach-label">🔗</span>
                 <input class="social-compose__attach-input" id="socialMediaUrl" data-i18n-placeholder="social.attach.placeholder" placeholder="이미지·YouTube·파일 URL (선택)">
+                <label class="social-compose__file-btn" title="파일/이미지 업로드">
+                  📎
+                  <input type="file" id="socialFileInput" accept="image/*,video/*,.pdf,.pptx,.ppt,.docx,.doc,.hwp" class="hidden" onchange="App.handleFileSelect(event)">
+                </label>
               </div>
               <div class="social-compose__media-preview hidden" id="socialMediaPreview"></div>
               <div class="social-compose__footer">
@@ -516,8 +522,50 @@
     </div>
   </div>
 
+  <!-- Box Edit Modal -->
+  <div class="modal-overlay" id="boxEditModal">
+    <div class="modal" style="max-width:520px;">
+      <button class="modal__close" onclick="App.closeBoxEdit()">&times;</button>
+      <h2 class="modal__title" data-i18n="box.edit.title">박스 수정</h2>
+      <input type="hidden" id="editBoxId">
+      <div class="form-group">
+        <label class="form-label" data-i18n="create.boxname">박스 이름</label>
+        <input class="form-input" id="editBoxTitle" onkeydown="if(event.key==='Enter')App.saveBoxEdit()">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="create.desc">설명</label>
+        <textarea class="form-input" id="editBoxDesc" rows="3" style="resize:vertical;"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="create.cover">커버 이미지 URL</label>
+        <input class="form-input" id="editBoxCover">
+      </div>
+      <div class="form-group">
+        <label class="form-label">상태</label>
+        <select class="form-input" id="editBoxStatus">
+          <option value="draft" data-i18n="status.draft">작성 중</option>
+          <option value="packed" data-i18n="status.packed">포장 완료</option>
+          <option value="sent" data-i18n="status.sent">발송됨</option>
+          <option value="arrived" data-i18n="status.arrived">도착!</option>
+          <option value="opened" data-i18n="status.opened">개봉됨</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px;">
+        <button class="btn btn--secondary btn--full" onclick="App.closeBoxEdit()" data-i18n="common.cancel">취소</button>
+        <button class="btn btn--primary btn--full" onclick="App.saveBoxEdit()" data-i18n="common.save">저장</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast"></div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <a href="https://litt.ly/chichiboo" target="_blank" rel="noopener" class="site-footer__link">
+      Created by. 교육뮤지컬 꿈꾸는 치수쌤
+    </a>
+  </footer>
 
   <script src="js/i18n.js"></script>
   <script src="js/data.js"></script>

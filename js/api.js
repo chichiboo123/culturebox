@@ -86,6 +86,25 @@ const API = {
       case 'getSchools':
         return Promise.resolve(DataStore.schools);
 
+      case 'createSchool': {
+        const s = {
+          id: DataStore.generateId('sch'),
+          name_ko: params.name_ko || '',
+          name_en: params.name_en || '',
+          name_ja: params.name_ja || '',
+          country: params.country || '',
+          logo_url: params.logo_url || '',
+          created_at: new Date().toISOString()
+        };
+        DataStore.schools.push(s);
+        return Promise.resolve(s);
+      }
+
+      case 'deleteSchool': {
+        DataStore.schools = DataStore.schools.filter(s => s.id !== params.id);
+        return Promise.resolve(true);
+      }
+
       case 'getBoxes':
         let boxes = [...DataStore.boxes];
         if (params.status && params.status !== 'all') {
@@ -234,6 +253,8 @@ const API = {
 
   // Public API methods
   getSchools: () => API._fetch('getSchools'),
+  createSchool: (data) => API._post('createSchool', data),
+  deleteSchool: (id) => API._post('deleteSchool', { id }),
   getBoxes: (filters = {}) => API._fetch('getBoxes', filters),
   getBox: (id) => API._fetch('getBox', { id }),
   getItems: (boxId) => API._fetch('getItems', { box_id: boxId }),

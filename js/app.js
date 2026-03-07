@@ -78,9 +78,14 @@ const App = {
     }
 
     this.updateUserUI();
+
+    // 스프레드시트에서 학교/박스 데이터 불러오기
+    await DataStore.syncWithAPI();
+    this.populateSchoolSelectors();
+    this.populateLoginSchools();
+
     this.loadStats();
     this.loadRecentBoxes();
-    this.populateSchoolSelectors();
   },
 
   // ===== Navigation =====
@@ -1513,7 +1518,12 @@ const App = {
 
   // ===== Admin Panel =====
   currentAdminTab: 'schools',
-  loadAdmin() { this.adminTab('schools'); },
+  async loadAdmin() {
+    await DataStore.syncWithAPI();
+    this.populateSchoolSelectors();
+    this.populateLoginSchools();
+    this.adminTab('schools');
+  },
 
   adminTab(tab) {
     this.currentAdminTab = tab;
@@ -1533,10 +1543,75 @@ const App = {
   renderAdminSchools() {
     const rows = DataStore.schools.map(s => {
       const bc = DataStore.boxes.filter(b => b.from_school_id === s.id || b.to_school_id === s.id).length;
-      return `<tr><td><code>${s.id}</code></td><td><strong>${DataStore.getSchoolName(s.id)}</strong></td><td>${DataStore.getCountryFlag(s.country)} ${s.country}</td><td><span class="badge badge--sent">${bc}</span></td></tr>`;
+      return `<tr>
+        <td><code>${s.id}</code></td>
+        <td><strong>${DataStore.getSchoolName(s.id)}</strong></td>
+        <td>${DataStore.getCountryFlag(s.country)} ${s.country}</td>
+        <td><span class="badge badge--sent">${bc}</span></td>
+        <td>
+          <button class="btn btn--ghost btn--sm" style="color:var(--color-accent-red);" onclick="App.adminDeleteSchool('${s.id}','${this.escapeHtml(DataStore.getSchoolName(s.id))}')">🗑️ 삭제</button>
+        </td>
+      </tr>`;
     }).join('');
     return `<div class="admin-section-title">🏫 ${I18N.t('admin.schools')}</div>
-      <div class="admin-table"><table><thead><tr><th>ID</th><th>${I18N.t('admin.users.name')}</th><th>Country</th><th>Boxes</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      <div class="admin-user-form" style="margin-bottom:16px;">
+        <h4 style="font-weight:700;margin-bottom:12px;">➕ 학교 추가</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 80px auto;gap:8px;align-items:end;flex-wrap:wrap;">
+          <div>
+            <label class="form-label" style="font-size:11px;">이름(한국어)</label>
+            <input class="form-input" id="newSchoolNameKo" placeholder="서울초등학교">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;">이름(영어)</label>
+            <input class="form-input" id="newSchoolNameEn" placeholder="Seoul Elementary">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;">이름(일본어, 선택)</label>
+            <input class="form-input" id="newSchoolNameJa" placeholder="ソウル小学校">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;">국가코드</label>
+            <input class="form-input" id="newSchoolCountry" placeholder="KR" style="text-transform:uppercase;" maxlength="2">
+          </div>
+          <button class="btn btn--primary" onclick="App.adminCreateSchool()">➕ 추가</button>
+        </div>
+        <div class="form-error" id="newSchoolError" style="margin-top:8px;">한국어 이름과 영어 이름을 입력해주세요.</div>
+      </div>
+      <div class="admin-table"><table><thead><tr><th>ID</th><th>이름</th><th>국가</th><th>박스 수</th><th>Actions</th></tr></thead><tbody>${rows || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--color-text-tertiary);">등록된 학교가 없습니다.</td></tr>'}</tbody></table></div>`;
+  },
+
+  async adminCreateSchool() {
+    const name_ko = document.getElementById('newSchoolNameKo').value.trim();
+    const name_en = document.getElementById('newSchoolNameEn').value.trim();
+    const name_ja = document.getElementById('newSchoolNameJa').value.trim();
+    const country = document.getElementById('newSchoolCountry').value.trim().toUpperCase();
+    const errEl = document.getElementById('newSchoolError');
+    if (!name_ko || !name_en) { errEl.classList.add('show'); return; }
+    errEl.classList.remove('show');
+    try {
+      const school = await API.createSchool({ name_ko, name_en, name_ja, country });
+      DataStore.schools.push(school);
+      this.adminTab('schools');
+      this.populateSchoolSelectors();
+      this.populateLoginSchools();
+      this.toast('✅ 학교가 추가되었습니다.');
+    } catch(e) {
+      this.toast('❌ 추가 실패: ' + e.message);
+    }
+  },
+
+  async adminDeleteSchool(id, name) {
+    if (!confirm(`"${name}" 학교를 삭제하시겠습니까?`)) return;
+    try {
+      await API.deleteSchool(id);
+      DataStore.schools = DataStore.schools.filter(s => s.id !== id);
+      this.adminTab('schools');
+      this.populateSchoolSelectors();
+      this.populateLoginSchools();
+      this.toast('🗑️ 학교가 삭제되었습니다.');
+    } catch(e) {
+      this.toast('❌ 삭제 실패: ' + e.message);
+    }
   },
 
   renderAdminBoxes() {

@@ -5,39 +5,38 @@
  * 1. Create a Google Spreadsheet
  * 2. Create the following sheets with headers in row 1:
  *
- * Sheet "Schools":
- * id | name_ko | name_en | name_ja | country | logo_url | created_at
+ *    Sheet "Schools":
+ *    id | name_ko | name_en | name_ja | country | logo_url | created_at
  *
- * Sheet "Users":
- * id | school_id | role | name | email | lang_pref | created_at
+ *    Sheet "Users":
+ *    id | school_id | role | name | email | lang_pref | created_at
  *
- * Sheet "Boxes":
- * id | title | title_en | title_ja | description | description_en | description_ja |
- * from_school_id | to_school_id | status | cover_image_url | created_by | created_at | sent_at | opened_at
+ *    Sheet "Boxes":
+ *    id | title | title_en | title_ja | description | description_en | description_ja |
+ *    from_school_id | to_school_id | status | cover_image_url | created_by | created_at | sent_at | opened_at
  *
- * Sheet "Items":
- * id | box_id | type | title | title_en | title_ja | content | content_en | content_ja | file_url | order | created_by | created_at
- * (content_en / content_ja: can be filled via =GOOGLETRANSLATE(G2,"ko","en") in Sheets)
+ *    Sheet "Items":
+ *    id | box_id | type | title | title_en | title_ja | content | content_en | content_ja | file_url | order | created_by | created_at
+ *    (content_en / content_ja: can be filled via =GOOGLETRANSLATE(G2,"ko","en") in Sheets)
  *
- * Sheet "Messages":
- * id | box_id | user_id | user_name | user_school | content | type | media_url | parent_id | status | created_at
- * (type: text/image/youtube/video/link  |  media_url: attached URL)
+ *    Sheet "Messages":
+ *    id | box_id | user_id | user_name | user_school | content | type | media_url | parent_id | status | created_at
+ *    (type: text/image/youtube/video/link  |  media_url: attached URL)
  *
- * Sheet "Reactions":
- * id | target_type | target_id | user_id | type | created_at
+ *    Sheet "Reactions":
+ *    id | target_type | target_id | user_id | type | created_at
  *
  * 3. Go to Extensions > Apps Script
  * 4. Paste this code into Code.gs
  * 5. Set the SPREADSHEET_ID below
  * 6. Deploy > New Deployment > Web App
- * - Execute as: Me
- * - Who has access: Anyone
+ *    - Execute as: Me
+ *    - Who has access: Anyone
  * 7. Copy the deployment URL and set it in js/api.js as API.GAS_URL
  */
 
 // ====== CONFIGURATION ======
-// ✅ 제공해주신 시트 ID가 적용되었습니다.
-const SPREADSHEET_ID = '1eLN5rHcPntDsSL1E5qzthXQHFjmUCH065bfhoWyMdxM'; 
+const SPREADSHEET_ID = '1eLN5rHcPntDsSL1E5qzthXQHFjmUCH065bfhoWyMdxM';
 
 // ====== HELPERS ======
 
@@ -271,17 +270,38 @@ function doPost(e) {
           id,
           box_id: body.box_id || '',
           user_id: body.user_id || '',
-          user_name: body.user_name || '',
+          user_name: body.user_name_override || body.user_name || '',
           user_school: body.user_school || '',
           content: body.content || '',
           type: body.type || 'text',
           media_url: body.media_url || '',
           parent_id: body.parent_id || '',
-          status: body.status || 'pending',
+          status: 'approved',
           created_at: new Date().toISOString()
         };
         appendRow('Messages', msg);
         return jsonResponse(msg);
+      }
+
+      case 'deleteBox': {
+        const bid = body.id;
+        // Remove box, its items, and its messages
+        deleteRow('Boxes', bid);
+        const items = sheetToArray('Items').filter(i => i.box_id === bid);
+        items.forEach(i => deleteRow('Items', i.id));
+        const msgs = sheetToArray('Messages').filter(m => m.box_id === bid);
+        msgs.forEach(m => deleteRow('Messages', m.id));
+        return jsonResponse(true);
+      }
+
+      case 'updateMessage': {
+        const result = updateRow('Messages', body.id, { content: body.content });
+        return jsonResponse(result);
+      }
+
+      case 'deleteMessage': {
+        deleteRow('Messages', body.id);
+        return jsonResponse(true);
       }
 
       case 'updateMessageStatus': {
@@ -368,7 +388,7 @@ function setupSheets() {
     const sampleSchools = [
       ['sch_01', '서울 하늘초등학교', 'Seoul Sky Elementary', 'ソウルスカイ小学校', 'KR', '', new Date().toISOString()],
       ['sch_02', '도쿄 사쿠라 초등학교', 'Tokyo Sakura Elementary', '東京さくら小学校', 'JP', '', new Date().toISOString()],
-      ['sch_03', '뉴욕 브루클린 초등학교', 'Brooklyn Elementary', 'ブルック린小学校', 'US', '', new Date().toISOString()],
+      ['sch_03', '뉴욕 브루클린 초등학교', 'Brooklyn Elementary', 'ブルックリン小学校', 'US', '', new Date().toISOString()],
       ['sch_04', '부산 바다초등학교', 'Busan Ocean Elementary', '釜山オーシャン小学校', 'KR', '', new Date().toISOString()],
     ];
     sampleSchools.forEach(row => schoolsSheet.appendRow(row));

@@ -1169,18 +1169,23 @@ const App = {
     </div>`;
   },
 
-  saveSocialPostEdit(postId) {
+  async saveSocialPostEdit(postId) {
     const ta = document.getElementById('sp-edit-' + postId);
     if (!ta) return;
     const newText = ta.value.trim();
     if (!newText) return;
+    await API.updateMessage(postId, newText);
     const msg = DataStore.messages.find(m => m.id === postId);
     if (msg) { msg.content = newText; DataStore.save(); }
     if (this.currentBox) this.loadSocialFeed(this.currentBox.id);
   },
 
-  deleteSocialPost(postId) {
+  async deleteSocialPost(postId) {
     if (!confirm('이 게시글을 삭제할까요?')) return;
+    await API.deleteMessage(postId);
+    // Also delete replies
+    const replyIds = DataStore.messages.filter(m => m.parent_id === postId).map(m => m.id);
+    for (const rid of replyIds) await API.deleteMessage(rid);
     DataStore.messages = DataStore.messages.filter(m => m.id !== postId && m.parent_id !== postId);
     DataStore.save();
     if (this.currentBox) this.loadSocialFeed(this.currentBox.id);
@@ -1200,18 +1205,20 @@ const App = {
     </div>`;
   },
 
-  saveSocialCommentEdit(replyId, postId) {
+  async saveSocialCommentEdit(replyId, postId) {
     const ta = document.getElementById('sc-edit-' + replyId);
     if (!ta) return;
     const newText = ta.value.trim();
     if (!newText) return;
+    await API.updateMessage(replyId, newText);
     const msg = DataStore.messages.find(m => m.id === replyId);
     if (msg) { msg.content = newText; DataStore.save(); }
     if (this.currentBox) this.loadSocialFeed(this.currentBox.id);
   },
 
-  deleteSocialComment(replyId, postId) {
+  async deleteSocialComment(replyId, postId) {
     if (!confirm('이 댓글을 삭제할까요?')) return;
+    await API.deleteMessage(replyId);
     DataStore.messages = DataStore.messages.filter(m => m.id !== replyId);
     DataStore.save();
     if (this.currentBox) this.loadSocialFeed(this.currentBox.id);
@@ -1492,13 +1499,14 @@ const App = {
     this.toast('✅ 박스가 수정되었습니다.');
   },
 
-  deleteBox(boxId) {
+  async deleteBox(boxId) {
     if (!confirm('정말로 이 박스를 삭제하시겠습니까?')) return;
-    const idx = DataStore.boxes.findIndex(b => b.id === boxId);
-    if (idx !== -1) {
-      DataStore.boxes.splice(idx, 1);
-      DataStore.save();
-    }
+    await API.deleteBox(boxId);
+    // Update local store
+    DataStore.boxes = DataStore.boxes.filter(b => b.id !== boxId);
+    DataStore.items = DataStore.items.filter(i => i.box_id !== boxId);
+    DataStore.messages = DataStore.messages.filter(m => m.box_id !== boxId);
+    DataStore.save();
     this.loadMyBoxes();
     this.toast('🗑️ 박스가 삭제되었습니다.');
   },

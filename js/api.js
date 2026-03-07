@@ -8,26 +8,26 @@
  * === Google Apps Script Deployment Guide ===
  *
  * 1. Create a Google Spreadsheet with these sheets:
- * - Schools (columns: id, name_ko, name_en, name_ja, country, logo_url, created_at)
- * - Users (columns: id, school_id, role, name, email, lang_pref, created_at)
- * - Boxes (columns: id, title, title_en, title_ja, description, description_en, description_ja,
- * from_school_id, to_school_id, status, cover_image_url, created_by, created_at, sent_at, opened_at)
- * - Items (columns: id, box_id, type, title, title_en, title_ja, content, file_url, order, created_by, created_at)
- * - Messages (columns: id, box_id, user_id, user_name, user_school, content, parent_id, status, created_at)
- * - Reactions (columns: id, target_type, target_id, user_id, type, created_at)
+ *    - Schools (columns: id, name_ko, name_en, name_ja, country, logo_url, created_at)
+ *    - Users (columns: id, school_id, role, name, email, lang_pref, created_at)
+ *    - Boxes (columns: id, title, title_en, title_ja, description, description_en, description_ja,
+ *             from_school_id, to_school_id, status, cover_image_url, created_by, created_at, sent_at, opened_at)
+ *    - Items (columns: id, box_id, type, title, title_en, title_ja, content, file_url, order, created_by, created_at)
+ *    - Messages (columns: id, box_id, user_id, user_name, user_school, content, parent_id, status, created_at)
+ *    - Reactions (columns: id, target_type, target_id, user_id, type, created_at)
  *
  * 2. Open Apps Script (Extensions > Apps Script) and paste the code from gas/Code.gs
  *
  * 3. Deploy as Web App:
- * - Execute as: Me
- * - Who has access: Anyone
+ *    - Execute as: Me
+ *    - Who has access: Anyone
  *
  * 4. Set the deployment URL below:
  */
 
 const API = {
-  // ✅ 요청하신 앱스스크립트 링크를 여기에 넣었습니다.
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbx5j4zaau2FN9695nhCMgIgAokpWYw3MCJRTdRXwK78UzUOhXTp8oHhiwLui-Dl1YwR1w/exec',
+  // Set this to your Google Apps Script deployment URL
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzFjDT3WUncXROqm2-SJ01Lg1L1K17b9Yvgx9W7BJEbmfCzultQxL0Er5zTkZgx8LI-/exec',
 
   // Whether to use local data (true) or GAS backend (false)
   get isLocal() {
@@ -156,13 +156,35 @@ const API = {
           id: DataStore.generateId('msg'),
           ...params,
           user_id: DataStore.currentUser?.id || 'unknown',
-          user_name: DataStore.currentUser?.name || 'Anonymous',
+          user_name: params.user_name_override || DataStore.currentUser?.name || 'Anonymous',
           user_school: DataStore.currentUser?.school_id || '',
-          status: DataStore.currentUser?.role === 'teacher' ? 'approved' : 'approved', // auto-approve for demo
+          status: 'approved',
           created_at: new Date().toISOString()
         };
         DataStore.messages.push(newMsg);
+        DataStore.save();
         return Promise.resolve(newMsg);
+      }
+
+      case 'deleteBox': {
+        const bid = params.id;
+        DataStore.boxes = DataStore.boxes.filter(b => b.id !== bid);
+        DataStore.items = DataStore.items.filter(i => i.box_id !== bid);
+        DataStore.messages = DataStore.messages.filter(m => m.box_id !== bid);
+        DataStore.save();
+        return Promise.resolve(true);
+      }
+
+      case 'updateMessage': {
+        const mIdx = DataStore.messages.findIndex(m => m.id === params.id);
+        if (mIdx >= 0) { DataStore.messages[mIdx].content = params.content; DataStore.save(); }
+        return Promise.resolve(true);
+      }
+
+      case 'deleteMessage': {
+        DataStore.messages = DataStore.messages.filter(m => m.id !== params.id);
+        DataStore.save();
+        return Promise.resolve(true);
       }
 
       case 'updateMessageStatus': {
@@ -224,5 +246,8 @@ const API = {
   updateMessageStatus: (id, status) => API._post('updateMessageStatus', { id, status }),
   sendBox: (id) => API._post('sendBox', { id }),
   openBox: (id) => API._post('openBox', { id }),
+  deleteBox: (id) => API._post('deleteBox', { id }),
+  updateMessage: (id, content) => API._post('updateMessage', { id, content }),
+  deleteMessage: (id) => API._post('deleteMessage', { id }),
   getStats: () => API._fetch('getStats'),
 };

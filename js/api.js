@@ -8,26 +8,26 @@
  * === Google Apps Script Deployment Guide ===
  *
  * 1. Create a Google Spreadsheet with these sheets:
- *    - Schools (columns: id, name_ko, name_en, name_ja, country, logo_url, created_at)
- *    - Users (columns: id, school_id, role, name, email, lang_pref, created_at)
- *    - Boxes (columns: id, title, title_en, title_ja, description, description_en, description_ja,
- *             from_school_id, to_school_id, status, cover_image_url, created_by, created_at, sent_at, opened_at)
- *    - Items (columns: id, box_id, type, title, title_en, title_ja, content, file_url, order, created_by, created_at)
- *    - Messages (columns: id, box_id, user_id, user_name, user_school, content, parent_id, status, created_at)
- *    - Reactions (columns: id, target_type, target_id, user_id, type, created_at)
+ * - Schools (columns: id, name_ko, name_en, name_ja, country, logo_url, created_at)
+ * - Users (columns: id, school_id, role, name, email, lang_pref, created_at)
+ * - Boxes (columns: id, title, title_en, title_ja, description, description_en, description_ja,
+ * from_school_id, to_school_id, status, cover_image_url, created_by, created_at, sent_at, opened_at)
+ * - Items (columns: id, box_id, type, title, title_en, title_ja, content, file_url, order, created_by, created_at)
+ * - Messages (columns: id, box_id, user_id, user_name, user_school, content, parent_id, status, created_at)
+ * - Reactions (columns: id, target_type, target_id, user_id, type, created_at)
  *
  * 2. Open Apps Script (Extensions > Apps Script) and paste the code from gas/Code.gs
  *
  * 3. Deploy as Web App:
- *    - Execute as: Me
- *    - Who has access: Anyone
+ * - Execute as: Me
+ * - Who has access: Anyone
  *
  * 4. Set the deployment URL below:
  */
 
 const API = {
-  // Set this to your Google Apps Script deployment URL
-  GAS_URL: '',
+  // ✅ 요청하신 앱스스크립트 링크를 여기에 넣었습니다.
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbx5j4zaau2FN9695nhCMgIgAokpWYw3MCJRTdRXwK78UzUOhXTp8oHhiwLui-Dl1YwR1w/exec',
 
   // Whether to use local data (true) or GAS backend (false)
   get isLocal() {

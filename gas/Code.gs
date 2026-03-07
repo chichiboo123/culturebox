@@ -19,7 +19,8 @@
  *    id | box_id | type | title | title_en | title_ja | content | file_url | order | created_by | created_at
  *
  *    Sheet "Messages":
- *    id | box_id | user_id | user_name | user_school | content | parent_id | status | created_at
+ *    id | box_id | user_id | user_name | user_school | content | type | media_url | parent_id | status | created_at
+ *    (type: text/image/youtube/video/link  |  media_url: attached URL)
  *
  *    Sheet "Reactions":
  *    id | target_type | target_id | user_id | type | created_at
@@ -167,6 +168,18 @@ function doGet(e) {
         return jsonResponse(filtered);
       }
 
+      case 'translate': {
+        const text = e.parameter.text;
+        const to = e.parameter.to || 'en';
+        if (!text) return jsonResponse('');
+        try {
+          const translated = LanguageApp.translate(text, '', to);
+          return jsonResponse(translated);
+        } catch (err) {
+          return errorResponse('Translation failed: ' + err.toString());
+        }
+      }
+
       case 'getStats': {
         const schools = sheetToArray('Schools');
         const boxes = sheetToArray('Boxes').filter(b => b.status !== 'draft');
@@ -253,6 +266,8 @@ function doPost(e) {
           user_name: body.user_name || '',
           user_school: body.user_school || '',
           content: body.content || '',
+          type: body.type || 'text',
+          media_url: body.media_url || '',
           parent_id: body.parent_id || '',
           status: body.status || 'pending',
           created_at: new Date().toISOString()
@@ -315,7 +330,7 @@ function setupSheets() {
     'Users': ['id', 'school_id', 'role', 'name', 'email', 'lang_pref', 'created_at'],
     'Boxes': ['id', 'title', 'title_en', 'title_ja', 'description', 'description_en', 'description_ja', 'from_school_id', 'to_school_id', 'status', 'cover_image_url', 'created_by', 'created_at', 'sent_at', 'opened_at'],
     'Items': ['id', 'box_id', 'type', 'title', 'title_en', 'title_ja', 'content', 'file_url', 'order', 'created_by', 'created_at'],
-    'Messages': ['id', 'box_id', 'user_id', 'user_name', 'user_school', 'content', 'parent_id', 'status', 'created_at'],
+    'Messages': ['id', 'box_id', 'user_id', 'user_name', 'user_school', 'content', 'type', 'media_url', 'parent_id', 'status', 'created_at'],
     'Reactions': ['id', 'target_type', 'target_id', 'user_id', 'type', 'created_at']
   };
 

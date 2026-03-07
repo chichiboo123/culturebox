@@ -8,7 +8,7 @@ const I18N = {
     ko: {
       // Navigation
       'nav.home': '홈',
-      'nav.explore': '박스 탐색',
+      'nav.explore': '박스 보관소',
       'nav.pack': '박스 만들기',
       'nav.myboxes': '내 박스',
       'nav.messages': '소통',
@@ -188,7 +188,7 @@ const I18N = {
       'admin.users.code': '접속 코드',
 
       // Misc
-      'explore.back': '탐색으로 돌아가기',
+      'explore.back': '보관소로 돌아가기',
       'explore.search': '검색...',
       'myboxes.empty.btn': '박스 만들기',
       'tab.items': '아이템',
@@ -202,10 +202,16 @@ const I18N = {
       'social.type.image': '이미지',
       'social.type.youtube': '유튜브',
       'social.media.placeholder': '이미지 URL 또는 YouTube URL',
+      'social.attach.placeholder': '이미지·YouTube·파일 URL (선택)',
+      'compose.name.label': '이름',
+      'compose.name.placeholder': '이름 입력',
+      'translate.btn': '번역',
+      'translate.hide': '번역 숨기기',
+      'translate.unavailable': '번역 기능을 사용하려면 GAS URL을 설정해주세요.',
     },
     en: {
       'nav.home': 'Home',
-      'nav.explore': 'Explore',
+      'nav.explore': 'Box Archive',
       'nav.pack': 'Create Box',
       'nav.myboxes': 'My Boxes',
       'nav.messages': 'Messages',
@@ -367,7 +373,7 @@ const I18N = {
       'admin.users.role': 'Role',
       'admin.users.code': 'Access Code',
 
-      'explore.back': 'Back to Explore',
+      'explore.back': 'Back to Archive',
       'explore.search': 'Search...',
       'myboxes.empty.btn': 'Create a Box',
       'tab.items': 'Items',
@@ -381,10 +387,16 @@ const I18N = {
       'social.type.image': 'Image',
       'social.type.youtube': 'YouTube',
       'social.media.placeholder': 'Image URL or YouTube URL',
+      'social.attach.placeholder': 'Image · YouTube · File URL (optional)',
+      'compose.name.label': 'Name',
+      'compose.name.placeholder': 'Enter name',
+      'translate.btn': 'Translate',
+      'translate.hide': 'Hide translation',
+      'translate.unavailable': 'Configure GAS URL to enable translation.',
     },
     ja: {
       'nav.home': 'ホーム',
-      'nav.explore': 'ボックス探索',
+      'nav.explore': 'ボックス保管庫',
       'nav.pack': 'ボックス作成',
       'nav.myboxes': 'マイボックス',
       'nav.messages': 'メッセージ',
@@ -546,7 +558,7 @@ const I18N = {
       'admin.users.role': '役割',
       'admin.users.code': 'アクセスコード',
 
-      'explore.back': '探索に戻る',
+      'explore.back': '保管庫に戻る',
       'explore.search': '検索...',
       'myboxes.empty.btn': 'ボックスを作る',
       'tab.items': 'アイテム',
@@ -560,6 +572,12 @@ const I18N = {
       'social.type.image': '画像',
       'social.type.youtube': 'YouTube',
       'social.media.placeholder': '画像URLまたはYouTube URL',
+      'social.attach.placeholder': '画像・YouTube・ファイルURL（任意）',
+      'compose.name.label': '名前',
+      'compose.name.placeholder': '名前を入力',
+      'translate.btn': '翻訳',
+      'translate.hide': '翻訳を隠す',
+      'translate.unavailable': '翻訳にはGAS URLの設定が必要です。',
     }
   },
 

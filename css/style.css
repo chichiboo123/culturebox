@@ -173,7 +173,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 
 .nav__link:hover, .nav__link.active {
   color: var(--color-primary);
-  background: rgba(217,119,6,0.08);
+  background: var(--color-bg-warm);
 }
 
 .nav__actions {
@@ -295,7 +295,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
   background: var(--color-bg-warm);
   border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
   padding: var(--space-2xl) 0;
-  border-bottom: 1px solid #FDE68A;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .hero__title {
@@ -1784,6 +1784,378 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
 ::selection { background: rgba(217,119,6,0.2); }
 :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+/* =========================================
+   THEME SYSTEM
+   ========================================= */
+
+/* Pastel Blue Theme */
+body.theme-blue {
+  --color-primary: #4A9EF5;
+  --color-primary-light: #7CC3FF;
+  --color-primary-dark: #2563EB;
+  --color-secondary: #34D399;
+  --color-accent-pink: #A78BFA;
+  --color-bg: #EFF6FF;
+  --color-bg-warm: #DBEAFE;
+  --color-surface-warm: #F0F7FF;
+  --color-border: #BFDBFE;
+  --color-border-light: #DBEAFE;
+}
+body.theme-blue .nav {
+  background: rgba(239,246,255,0.88);
+}
+body.theme-blue .hero {
+  background: var(--color-bg-warm);
+  border-bottom-color: #93C5FD;
+}
+body.theme-blue .nav__logo-icon {
+  box-shadow: 0 2px 8px rgba(74,158,245,0.3);
+}
+body.theme-blue ::selection { background: rgba(74,158,245,0.2); }
+
+/* Pastel Green Theme */
+body.theme-green {
+  --color-primary: #2DBD8C;
+  --color-primary-light: #5BDAB0;
+  --color-primary-dark: #059669;
+  --color-secondary: #60A5FA;
+  --color-accent-pink: #F472B6;
+  --color-bg: #ECFDF5;
+  --color-bg-warm: #D1FAE5;
+  --color-surface-warm: #F0FFF8;
+  --color-border: #A7F3D0;
+  --color-border-light: #D1FAE5;
+}
+body.theme-green .nav {
+  background: rgba(236,253,245,0.88);
+}
+body.theme-green .hero {
+  background: var(--color-bg-warm);
+  border-bottom-color: #6EE7B7;
+}
+body.theme-green .nav__logo-icon {
+  box-shadow: 0 2px 8px rgba(45,189,140,0.3);
+}
+body.theme-green ::selection { background: rgba(45,189,140,0.2); }
+
+/* Pastel Pink Theme */
+body.theme-pink {
+  --color-primary: #F06BAB;
+  --color-primary-light: #F9A8D4;
+  --color-primary-dark: #DB2777;
+  --color-secondary: #A78BFA;
+  --color-accent-pink: #FB923C;
+  --color-bg: #FDF2F8;
+  --color-bg-warm: #FCE7F3;
+  --color-surface-warm: #FFF5FB;
+  --color-border: #F9A8D4;
+  --color-border-light: #FCE7F3;
+}
+body.theme-pink .nav {
+  background: rgba(253,242,248,0.88);
+}
+body.theme-pink .hero {
+  background: var(--color-bg-warm);
+  border-bottom-color: #F9A8D4;
+}
+body.theme-pink .nav__logo-icon {
+  box-shadow: 0 2px 8px rgba(240,107,171,0.3);
+}
+body.theme-pink ::selection { background: rgba(240,107,171,0.2); }
+
+/* Theme transition */
+body { transition: background-color 0.3s ease; }
+
+/* =========================================
+   THEME PICKER
+   ========================================= */
+.theme-picker {
+  position: relative;
+}
+
+.theme-picker__btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: var(--color-surface-warm);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.theme-picker__btn:hover {
+  background: var(--color-surface-hover);
+  transform: rotate(15deg);
+}
+
+.theme-picker__dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border);
+  padding: var(--space-sm);
+  min-width: 180px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px) scale(0.97);
+  transition: all var(--transition-fast);
+  z-index: 200;
+}
+.theme-picker.open .theme-picker__dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.theme-picker__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 10px 8px;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  text-align: left;
+}
+.theme-option:hover { background: var(--color-surface-warm); }
+.theme-option.active {
+  background: var(--color-bg-warm);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.theme-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* =========================================
+   USER CHIP (logged-in indicator)
+   ========================================= */
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface-warm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 4px 12px 4px 6px;
+  max-width: 200px;
+}
+.user-chip__avatar {
+  width: 28px;
+  height: 28px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.user-chip__info {
+  overflow: hidden;
+}
+.user-chip__name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-chip__school {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Admin chip */
+.admin-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: white;
+  border-radius: var(--radius-full);
+  padding: 5px 6px 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.admin-chip__logout {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 2px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.admin-chip__logout:hover { background: rgba(255,255,255,0.25); }
+
+/* =========================================
+   HERO ENHANCEMENTS
+   ========================================= */
+.hero__decoration {
+  position: absolute;
+  font-size: 48px;
+  opacity: 0.12;
+  pointer-events: none;
+  user-select: none;
+}
+.hero__decoration--1 { top: 15%; left: 5%; animation: float1 6s ease-in-out infinite; }
+.hero__decoration--2 { top: 10%; right: 8%; animation: float2 8s ease-in-out infinite; }
+.hero__decoration--3 { bottom: 20%; left: 15%; animation: float1 7s ease-in-out infinite 1s; }
+
+@keyframes float1 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(10deg); }
+}
+@keyframes float2 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(-8deg); }
+}
+
+.hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 20px;
+  backdrop-filter: blur(4px);
+}
+
+/* =========================================
+   LOGIN PROMPT BOX (home page)
+   ========================================= */
+.login-prompt-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
+  margin: 24px auto;
+  max-width: 600px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-md);
+}
+.login-prompt-box__icon {
+  font-size: 36px;
+  flex-shrink: 0;
+}
+.login-prompt-box__text {
+  flex: 1;
+  min-width: 200px;
+}
+.login-prompt-box__text strong {
+  display: block;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.login-prompt-box__text p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* =========================================
+   SCHOOL BANNER (explore page)
+   ========================================= */
+.school-banner {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: white;
+  border-radius: var(--radius-xl);
+  padding: 12px 20px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  display: none;
+}
+.school-banner:not(:empty) { display: flex; align-items: center; gap: 10px; }
+
+/* =========================================
+   MODAL ENHANCEMENTS
+   ========================================= */
+.modal__icon {
+  text-align: center;
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+.modal__subtitle {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: 20px;
+  margin-top: -8px;
+}
+.modal__admin-link {
+  text-align: center;
+  margin-top: 12px;
+}
+.modal--admin {
+  border-top: 3px solid #334155;
+}
+
+/* =========================================
+   ADMIN PANEL ENHANCEMENTS
+   ========================================= */
+.admin-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+/* =========================================
+   VIEW ALL LINK
+   ========================================= */
+.view-all-link {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  transition: background var(--transition-fast);
+}
+.view-all-link:hover { background: var(--color-bg-warm); }
 
 /* =========================================
    MOBILE BOTTOM NAV (optional enhancement)

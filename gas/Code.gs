@@ -250,7 +250,11 @@ function doPost(e) {
           file_url: body.file_url || '',
           order: body.order || 0,
           created_by: body.created_by || '',
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          // Translation columns — fill via =GOOGLETRANSLATE(content_col,"auto","ko/en/ja") in Sheets
+          trans_ko: '',
+          trans_en: '',
+          trans_ja: ''
         };
         appendRow('Items', item);
         return jsonResponse(item);
@@ -333,7 +337,7 @@ function setupSheets() {
     'Schools': ['id', 'name_ko', 'name_en', 'name_ja', 'country', 'logo_url', 'created_at'],
     'Users': ['id', 'school_id', 'role', 'name', 'email', 'lang_pref', 'created_at'],
     'Boxes': ['id', 'title', 'title_en', 'title_ja', 'description', 'description_en', 'description_ja', 'from_school_id', 'to_school_id', 'status', 'cover_image_url', 'created_by', 'created_at', 'sent_at', 'opened_at'],
-    'Items': ['id', 'box_id', 'type', 'title', 'title_en', 'title_ja', 'content', 'content_en', 'content_ja', 'file_url', 'order', 'created_by', 'created_at'],
+    'Items': ['id', 'box_id', 'type', 'title', 'title_en', 'title_ja', 'content', 'content_en', 'content_ja', 'file_url', 'order', 'created_by', 'created_at', 'trans_ko', 'trans_en', 'trans_ja'],
     'Messages': ['id', 'box_id', 'user_id', 'user_name', 'user_school', 'content', 'type', 'media_url', 'parent_id', 'status', 'created_at'],
     'Reactions': ['id', 'target_type', 'target_id', 'user_id', 'type', 'created_at']
   };

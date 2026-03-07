@@ -111,5 +111,24 @@ const DataStore = {
 
   generateId(prefix) {
     return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+  },
+
+  save() {
+    try {
+      localStorage.setItem('dcb_messages', JSON.stringify(this.messages));
+      localStorage.setItem('dcb_item_comments', JSON.stringify(this.itemComments));
+    } catch(e) { console.warn('DataStore.save failed', e); }
+  },
+
+  loadSaved() {
+    try {
+      const msgs = localStorage.getItem('dcb_messages');
+      if (msgs) {
+        const parsed = JSON.parse(msgs);
+        parsed.forEach(m => { if (!this.messages.find(x => x.id === m.id)) this.messages.push(m); });
+      }
+      const cmts = localStorage.getItem('dcb_item_comments');
+      if (cmts) this.itemComments = JSON.parse(cmts);
+    } catch(e) { console.warn('DataStore.loadSaved failed', e); }
   }
 };

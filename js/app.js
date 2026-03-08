@@ -1605,6 +1605,22 @@ const App = {
   currentAdminTab: 'schools',
   async loadAdmin() {
     await DataStore.syncWithAPI();
+    // GAS Users 시트 → localStorage 동기화 (email 컬럼 = 접속코드)
+    try {
+      const gasUsers = await API.getUsers();
+      const local = DataStore.getManagedUsers();
+      let changed = false;
+      gasUsers.forEach(u => {
+        const id = String(u.id || '').trim();
+        const code = String(u.email || '').trim();
+        if (!id || !code) return;           // id 또는 코드 없는 행 무시
+        if (!local.find(l => l.id === id)) {
+          local.push({ id, name: u.name || '', school_id: u.school_id || '', role: u.role || 'student', code, created_at: u.created_at || '' });
+          changed = true;
+        }
+      });
+      if (changed) DataStore.saveManagedUsers(local);
+    } catch(e) { /* GAS 미설정 환경 무시 */ }
     this.populateSchoolSelectors();
     this.populateLoginSchools();
     this.adminTab('schools');

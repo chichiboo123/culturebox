@@ -96,7 +96,11 @@ const DataStore = {
   },
 
   getBoxItems(boxId) {
-    return this.items.filter(i => i.box_id === boxId).sort((a, b) => a.order - b.order);
+    return this.items.filter(i => i.box_id === boxId).sort((a, b) => (a.order || 0) - (b.order || 0));
+  },
+
+  getItemComments(itemId) {
+    return (this.itemComments || []).filter(c => c.item_id === itemId);
   },
 
   getBoxMessages(boxId) {

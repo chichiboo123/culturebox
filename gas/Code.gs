@@ -457,5 +457,5 @@ function setupSheets() {
     sampleSchools.forEach(row => schoolsSheet.appendRow(row));
   }
 
-  SpreadsheetApp.getUi().alert('Setup complete! All sheets created with headers and sample data.');
+  Logger.log('Setup complete! All sheets created with headers and sample data.');
 }

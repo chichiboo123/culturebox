@@ -192,6 +192,26 @@ function doGet(e) {
         });
       }
 
+      case 'createSchool': {
+        const id = generateId('sch');
+        const school = {
+          id,
+          name_ko: e.parameter.name_ko || '',
+          name_en: e.parameter.name_en || '',
+          name_ja: e.parameter.name_ja || '',
+          country: e.parameter.country || '',
+          logo_url: e.parameter.logo_url || '',
+          created_at: new Date().toISOString()
+        };
+        appendRow('Schools', school);
+        return jsonResponse(school);
+      }
+
+      case 'deleteSchool': {
+        deleteRow('Schools', e.parameter.id);
+        return jsonResponse(true);
+      }
+
       default:
         return errorResponse('Unknown action: ' + action);
     }

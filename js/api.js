@@ -253,8 +253,8 @@ const API = {
 
   // Public API methods
   getSchools: () => API._fetch('getSchools'),
-  createSchool: (data) => API._post('createSchool', data),
-  deleteSchool: (id) => API._post('deleteSchool', { id }),
+  createSchool: (data) => API._fetch('createSchool', data),
+  deleteSchool: (id) => API._fetch('deleteSchool', { id }),
   getBoxes: (filters = {}) => API._fetch('getBoxes', filters),
   getBox: (id) => API._fetch('getBox', { id }),
   getItems: (boxId) => API._fetch('getItems', { box_id: boxId }),

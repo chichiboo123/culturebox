@@ -33,6 +33,10 @@
  *    - Execute as: Me
  *    - Who has access: Anyone
  * 7. Copy the deployment URL and set it in js/api.js as API.GAS_URL
+ *
+ * NOTE: All operations use doGet (GET requests) to avoid the cross-origin
+ * POST redirect issue where Google 302-redirects cross-origin POSTs to GET,
+ * causing doPost to never fire. All data is passed as URL parameters.
  */
 
 // ====== CONFIGURATION ======
@@ -74,7 +78,7 @@ function updateRow(sheetName, id, updates) {
   if (idCol < 0) return null;
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][idCol] === id) {
+    if (String(data[i][idCol]) === String(id)) {
       Object.entries(updates).forEach(([key, value]) => {
         const col = headers.indexOf(key);
         if (col >= 0) {
@@ -95,7 +99,7 @@ function deleteRow(sheetName, id) {
   if (idCol < 0) return false;
 
   for (let i = data.length - 1; i >= 1; i--) {
-    if (data[i][idCol] === id) {
+    if (String(data[i][idCol]) === String(id)) {
       sheet.deleteRow(i + 1);
       return true;
     }
@@ -117,13 +121,17 @@ function errorResponse(message) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ====== WEB APP HANDLERS ======
+// ====== WEB APP HANDLER ======
+// All operations go through doGet to avoid cross-origin POST redirect issues.
 
 function doGet(e) {
   const action = e.parameter.action;
 
   try {
     switch (action) {
+
+      // ===== READ OPERATIONS =====
+
       case 'getSchools':
         return jsonResponse(sheetToArray('Schools'));
 
@@ -169,18 +177,6 @@ function doGet(e) {
         return jsonResponse(filtered);
       }
 
-      case 'translate': {
-        const text = e.parameter.text;
-        const to = e.parameter.to || 'en';
-        if (!text) return jsonResponse('');
-        try {
-          const translated = LanguageApp.translate(text, '', to);
-          return jsonResponse(translated);
-        } catch (err) {
-          return errorResponse('Translation failed: ' + err.toString());
-        }
-      }
-
       case 'getStats': {
         const schools = sheetToArray('Schools');
         const boxes = sheetToArray('Boxes').filter(b => b.status !== 'draft');
@@ -195,25 +191,19 @@ function doGet(e) {
       case 'getUsers':
         return jsonResponse(sheetToArray('Users'));
 
-      case 'createUser': {
-        const uid = generateId('usr');
-        const user = {
-          id: uid,
-          school_id: e.parameter.school_id || '',
-          role: e.parameter.role || '',
-          name: e.parameter.name || '',
-          email: e.parameter.code || '',
-          lang_pref: '',
-          created_at: new Date().toISOString()
-        };
-        appendRow('Users', user);
-        return jsonResponse({ ...user, code: e.parameter.code || '' });
+      case 'translate': {
+        const text = e.parameter.text;
+        const to = e.parameter.to || 'en';
+        if (!text) return jsonResponse('');
+        try {
+          const translated = LanguageApp.translate(text, '', to);
+          return jsonResponse(translated);
+        } catch (err) {
+          return errorResponse('Translation failed: ' + err.toString());
+        }
       }
 
-      case 'deleteUser': {
-        deleteRow('Users', e.parameter.id);
-        return jsonResponse(true);
-      }
+      // ===== SCHOOL OPERATIONS =====
 
       case 'createSchool': {
         const id = generateId('sch');
@@ -235,35 +225,45 @@ function doGet(e) {
         return jsonResponse(true);
       }
 
-      default:
-        return errorResponse('Unknown action: ' + action);
-    }
-  } catch (err) {
-    return errorResponse(err.toString());
-  }
-}
+      // ===== USER OPERATIONS =====
 
-function doPost(e) {
-  try {
-    const body = JSON.parse(e.postData.contents);
-    const action = body.action;
+      case 'createUser': {
+        const uid = generateId('usr');
+        const user = {
+          id: uid,
+          school_id: e.parameter.school_id || '',
+          role: e.parameter.role || '',
+          name: e.parameter.name || '',
+          email: e.parameter.code || '',
+          lang_pref: '',
+          created_at: new Date().toISOString()
+        };
+        appendRow('Users', user);
+        return jsonResponse({ ...user, code: e.parameter.code || '' });
+      }
 
-    switch (action) {
+      case 'deleteUser': {
+        deleteRow('Users', e.parameter.id);
+        return jsonResponse(true);
+      }
+
+      // ===== BOX OPERATIONS =====
+
       case 'createBox': {
         const id = generateId('box');
         const box = {
           id,
-          title: body.title || '',
-          title_en: body.title_en || '',
-          title_ja: body.title_ja || '',
-          description: body.description || '',
-          description_en: body.description_en || '',
-          description_ja: body.description_ja || '',
-          from_school_id: body.from_school_id || '',
-          to_school_id: body.to_school_id || '',
+          title: e.parameter.title || '',
+          title_en: e.parameter.title_en || '',
+          title_ja: e.parameter.title_ja || '',
+          description: e.parameter.description || '',
+          description_en: e.parameter.description_en || '',
+          description_ja: e.parameter.description_ja || '',
+          from_school_id: e.parameter.from_school_id || '',
+          to_school_id: e.parameter.to_school_id || '',
           status: 'draft',
-          cover_image_url: body.cover_image_url || '',
-          created_by: body.created_by || '',
+          cover_image_url: e.parameter.cover_image_url || '',
+          created_by: e.parameter.created_by || '',
           created_at: new Date().toISOString().split('T')[0],
           sent_at: '',
           opened_at: ''
@@ -273,27 +273,58 @@ function doPost(e) {
       }
 
       case 'updateBox': {
-        const result = updateRow('Boxes', body.id, body);
+        const updates = {};
+        const fields = ['title','title_en','title_ja','description','description_en','description_ja',
+                        'from_school_id','to_school_id','status','cover_image_url','sent_at','opened_at'];
+        fields.forEach(f => { if (e.parameter[f] !== undefined) updates[f] = e.parameter[f]; });
+        const result = updateRow('Boxes', e.parameter.id, updates);
         return jsonResponse(result);
       }
+
+      case 'sendBox': {
+        const result = updateRow('Boxes', e.parameter.id, {
+          status: 'sent',
+          sent_at: new Date().toISOString().split('T')[0]
+        });
+        return jsonResponse(result);
+      }
+
+      case 'openBox': {
+        const result = updateRow('Boxes', e.parameter.id, {
+          status: 'opened',
+          opened_at: new Date().toISOString().split('T')[0]
+        });
+        return jsonResponse(result);
+      }
+
+      case 'deleteBox': {
+        const bid = e.parameter.id;
+        deleteRow('Boxes', bid);
+        const items = sheetToArray('Items').filter(i => i.box_id === bid);
+        items.forEach(i => deleteRow('Items', i.id));
+        const msgs = sheetToArray('Messages').filter(m => m.box_id === bid);
+        msgs.forEach(m => deleteRow('Messages', m.id));
+        return jsonResponse(true);
+      }
+
+      // ===== ITEM OPERATIONS =====
 
       case 'addItem': {
         const id = generateId('itm');
         const item = {
           id,
-          box_id: body.box_id || '',
-          type: body.type || 'text',
-          title: body.title || '',
-          title_en: body.title_en || '',
-          title_ja: body.title_ja || '',
-          content: body.content || '',
-          content_en: body.content_en || '',
-          content_ja: body.content_ja || '',
-          file_url: body.file_url || '',
-          order: body.order || 0,
-          created_by: body.created_by || '',
+          box_id: e.parameter.box_id || '',
+          type: e.parameter.type || 'text',
+          title: e.parameter.title || '',
+          title_en: e.parameter.title_en || '',
+          title_ja: e.parameter.title_ja || '',
+          content: e.parameter.content || '',
+          content_en: e.parameter.content_en || '',
+          content_ja: e.parameter.content_ja || '',
+          file_url: e.parameter.file_url || '',
+          order: e.parameter.order || 0,
+          created_by: e.parameter.created_by || '',
           created_at: new Date().toISOString(),
-          // Translation columns — fill via =GOOGLETRANSLATE(content_col,"auto","ko/en/ja") in Sheets
           trans_ko: '',
           trans_en: '',
           trans_ja: ''
@@ -303,22 +334,24 @@ function doPost(e) {
       }
 
       case 'removeItem': {
-        const result = deleteRow('Items', body.id);
+        const result = deleteRow('Items', e.parameter.id);
         return jsonResponse(result);
       }
+
+      // ===== MESSAGE OPERATIONS =====
 
       case 'addMessage': {
         const id = generateId('msg');
         const msg = {
           id,
-          box_id: body.box_id || '',
-          user_id: body.user_id || '',
-          user_name: body.user_name_override || body.user_name || '',
-          user_school: body.user_school || '',
-          content: body.content || '',
-          type: body.type || 'text',
-          media_url: body.media_url || '',
-          parent_id: body.parent_id || '',
+          box_id: e.parameter.box_id || '',
+          user_id: e.parameter.user_id || '',
+          user_name: e.parameter.user_name || '',
+          user_school: e.parameter.user_school || '',
+          content: e.parameter.content || '',
+          type: e.parameter.type || 'text',
+          media_url: e.parameter.media_url || '',
+          parent_id: e.parameter.parent_id || '',
           status: 'approved',
           created_at: new Date().toISOString()
         };
@@ -326,76 +359,31 @@ function doPost(e) {
         return jsonResponse(msg);
       }
 
-      case 'deleteBox': {
-        const bid = body.id;
-        // Remove box, its items, and its messages
-        deleteRow('Boxes', bid);
-        const items = sheetToArray('Items').filter(i => i.box_id === bid);
-        items.forEach(i => deleteRow('Items', i.id));
-        const msgs = sheetToArray('Messages').filter(m => m.box_id === bid);
-        msgs.forEach(m => deleteRow('Messages', m.id));
-        return jsonResponse(true);
-      }
-
       case 'updateMessage': {
-        const result = updateRow('Messages', body.id, { content: body.content });
+        const result = updateRow('Messages', e.parameter.id, { content: e.parameter.content || '' });
         return jsonResponse(result);
       }
 
       case 'deleteMessage': {
-        deleteRow('Messages', body.id);
+        deleteRow('Messages', e.parameter.id);
         return jsonResponse(true);
       }
 
       case 'updateMessageStatus': {
-        const result = updateRow('Messages', body.id, { status: body.status });
+        const result = updateRow('Messages', e.parameter.id, { status: e.parameter.status || '' });
         return jsonResponse(result);
       }
 
-      case 'sendBox': {
-        const result = updateRow('Boxes', body.id, {
-          status: 'sent',
-          sent_at: new Date().toISOString().split('T')[0]
-        });
-        return jsonResponse(result);
-      }
-
-      case 'openBox': {
-        const result = updateRow('Boxes', body.id, {
-          status: 'opened',
-          opened_at: new Date().toISOString().split('T')[0]
-        });
-        return jsonResponse(result);
-      }
-
-      case 'createSchool': {
-        const id = generateId('sch');
-        const school = {
-          id,
-          name_ko: body.name_ko || '',
-          name_en: body.name_en || '',
-          name_ja: body.name_ja || '',
-          country: body.country || '',
-          logo_url: body.logo_url || '',
-          created_at: new Date().toISOString()
-        };
-        appendRow('Schools', school);
-        return jsonResponse(school);
-      }
-
-      case 'deleteSchool': {
-        deleteRow('Schools', body.id);
-        return jsonResponse(true);
-      }
+      // ===== REACTION OPERATIONS =====
 
       case 'addReaction': {
         const id = generateId('rct');
         const reaction = {
           id,
-          target_type: body.target_type || '',
-          target_id: body.target_id || '',
-          user_id: body.user_id || '',
-          type: body.type || 'heart',
+          target_type: e.parameter.target_type || '',
+          target_id: e.parameter.target_id || '',
+          user_id: e.parameter.user_id || '',
+          type: e.parameter.type || 'heart',
           created_at: new Date().toISOString()
         };
         appendRow('Reactions', reaction);
@@ -408,6 +396,11 @@ function doPost(e) {
   } catch (err) {
     return errorResponse(err.toString());
   }
+}
+
+// doPost kept for compatibility but all real operations go through doGet
+function doPost(e) {
+  return errorResponse('Please use GET requests. POST is not supported due to cross-origin redirect issues.');
 }
 
 // ====== UTILITY: Setup Sheets ======

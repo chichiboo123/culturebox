@@ -1126,7 +1126,7 @@ const App = {
       content: text,
       parent_id: postId,
       type: 'text',
-      user_name_override: name
+      user_name: name
     });
     input.value = '';
     this.loadSocialFeed(this.currentBox.id);
@@ -1158,7 +1158,7 @@ const App = {
       parent_id: null,
       type: msgType,
       media_url: mediaUrl,
-      user_name_override: name
+      user_name: name
     });
     textarea.value = '';
     if (mediaUrlInput) mediaUrlInput.value = '';

@@ -486,13 +486,23 @@ const App = {
     setTimeout(() => this.showBoxContent(this.currentBox), 1200);
   },
 
-  showBoxContent(box) {
+  async showBoxContent(box) {
     document.getElementById('unboxingView').classList.add('hidden');
     document.getElementById('boxDetailView').classList.remove('hidden');
 
     const fromSchool = DataStore.getSchool(box.from_school_id);
     const toSchool   = DataStore.getSchool(box.to_school_id);
-    const items = DataStore.getBoxItems(box.id);
+
+    // Load items from API (covers both newly saved and previously loaded boxes)
+    let items = [];
+    try {
+      items = await API.getItems(box.id);
+      // Cache locally
+      DataStore.items = DataStore.items.filter(i => i.box_id !== box.id);
+      items.forEach(i => DataStore.items.push(i));
+    } catch(e) {
+      items = DataStore.getBoxItems(box.id);
+    }
 
     document.getElementById('boxDetailTitle').textContent = DataStore.getBoxTitle(box);
     document.getElementById('boxDetailDesc').textContent = DataStore.getBoxDesc(box);
@@ -1033,17 +1043,17 @@ const App = {
         const rs = DataStore.getSchool(r.user_school);
         const isReplyOwner = this.isAdmin || (userName && userName === r.user_name);
         const replyOwnerBtns = isReplyOwner
-          ? `<span class="social-post__owner-actions">
-              <button class="social-owner-btn" onclick="App.editSocialComment('${r.id}','${post.id}')">✏️</button>
-              <button class="social-owner-btn" onclick="App.deleteSocialComment('${r.id}','${post.id}')">🗑️</button>
-             </span>`
+          ? `<div class="social-comment__corner-actions">
+              <button class="social-owner-btn" title="수정" onclick="App.editSocialComment('${r.id}','${post.id}')">✏️</button>
+              <button class="social-owner-btn" title="삭제" onclick="App.deleteSocialComment('${r.id}','${post.id}')">🗑️</button>
+             </div>`
           : '';
-        return `<div class="social-comment" id="sc-wrap-${r.id}">
+        return `<div class="social-comment" id="sc-wrap-${r.id}" style="position:relative;">
+          ${replyOwnerBtns}
           <div class="social-comment__avatar" style="background:${gc(r.user_name)}">${gi(r.user_name)}</div>
           <div class="social-comment__body">
             <span class="social-comment__name">${this.escapeHtml(r.user_name)}</span>
             <span class="social-comment__school">${rs ? DataStore.getSchoolName(rs.id) : ''}</span>
-            ${replyOwnerBtns}
             <div class="social-comment__text" id="sc-text-${r.id}">${this.escapeHtml(r.content)}</div>
             <button class="item-comment__translate" onclick="App.toggleTranslation('sc-${r.id}','${this.escapeHtml(r.content).replace(/'/g,"\\'")}',this)">🌐</button>
             <div id="translated-sc-${r.id}" class="item-comment__translated" style="display:none;"></div>
@@ -1053,19 +1063,19 @@ const App = {
 
       const postContentEsc = post.content.replace(/'/g,"\\'").replace(/\n/g,' ');
       const postOwnerBtns = isPostOwner
-        ? `<div class="social-post__owner-actions">
-            <button class="social-owner-btn" onclick="App.editSocialPost('${post.id}')">✏️</button>
-            <button class="social-owner-btn" onclick="App.deleteSocialPost('${post.id}')">🗑️</button>
+        ? `<div class="social-post__corner-actions">
+            <button class="social-owner-btn" title="수정" onclick="App.editSocialPost('${post.id}')">✏️</button>
+            <button class="social-owner-btn" title="삭제" onclick="App.deleteSocialPost('${post.id}')">🗑️</button>
            </div>`
         : '';
       return `<div class="social-post" id="sp-${post.id}">
+        ${postOwnerBtns}
         <div class="social-post__header">
           <div class="social-post__avatar" style="background:${gc(post.user_name)}">${gi(post.user_name)}</div>
           <div class="social-post__user">
             <div class="social-post__name">${this.escapeHtml(post.user_name)}</div>
             <div class="social-post__meta">${school ? DataStore.getSchoolName(school.id) : ''} · ${this.formatDate(post.created_at)}</div>
           </div>
-          ${postOwnerBtns}
         </div>
         <div class="social-post__content" id="sp-text-${post.id}">${this.escapeHtml(post.content)}</div>
         <div id="translated-${post.id}" class="social-post__translated" style="display:none;"></div>
@@ -1241,26 +1251,49 @@ const App = {
     } catch(e) { return null; }
   },
 
-  async toggleTranslation(id, text, btnEl) {
+  showTranslatePicker(id, text, btnEl) {
+    // Remove any existing picker
+    document.querySelectorAll('.translate-picker').forEach(p => p.remove());
+
     const div = document.getElementById('translated-' + id);
-    if (!div) return;
-    if (div.textContent && div.style.display !== 'none') {
+    if (div && div.style.display !== 'none') {
       div.style.display = 'none';
-      btnEl.textContent = '🌐';
+      btnEl.dataset.translating = '';
       return;
     }
-    const currentLang = I18N.getLang();
-    const targetLang = currentLang === 'ko' ? 'en' : currentLang === 'en' ? 'ja' : 'ko';
-    btnEl.textContent = '⏳';
+
+    const picker = document.createElement('div');
+    picker.className = 'translate-picker';
+    picker.innerHTML = `
+      <button onclick="App.doTranslate('${id}','${text.replace(/'/g,"\\'")}',this.closest('.translate-picker'),'ko')">🇰🇷 한국어</button>
+      <button onclick="App.doTranslate('${id}','${text.replace(/'/g,"\\'")}',this.closest('.translate-picker'),'en')">🇺🇸 English</button>
+      <button onclick="App.doTranslate('${id}','${text.replace(/'/g,"\\'")}',this.closest('.translate-picker'),'ja')">🇯🇵 日本語</button>
+    `;
+    btnEl.parentNode.insertBefore(picker, btnEl.nextSibling);
+
+    // Close on outside click
+    const close = (e) => { if (!picker.contains(e.target) && e.target !== btnEl) { picker.remove(); document.removeEventListener('click', close); } };
+    setTimeout(() => document.addEventListener('click', close), 10);
+  },
+
+  async doTranslate(id, text, pickerEl, targetLang) {
+    if (pickerEl) pickerEl.remove();
+    const div = document.getElementById('translated-' + id);
+    if (!div) return;
+    div.textContent = '⏳ 번역 중...';
+    div.style.display = 'block';
     const translated = await this.translateText(text, targetLang);
     if (translated) {
-      div.textContent = translated;
-      div.style.display = 'block';
-      btnEl.textContent = '🌐✕';
+      const langLabel = { ko: '🇰🇷', en: '🇺🇸', ja: '🇯🇵' }[targetLang] || '';
+      div.textContent = langLabel + ' ' + translated;
     } else {
-      btnEl.textContent = '🌐';
+      div.style.display = 'none';
       this.toast(I18N.t('translate.unavailable'));
     }
+  },
+
+  async toggleTranslation(id, text, btnEl) {
+    this.showTranslatePicker(id, text, btnEl);
   },
 
   // ===== Create Box =====
@@ -1293,33 +1326,85 @@ const App = {
     }
   },
 
+  _itemFileData: null,
+
+  handleItemFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const label = document.getElementById('itemFileLabel');
+    const preview = document.getElementById('itemFilePreview');
+    if (label) label.textContent = '📎 ' + file.name;
+    if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this._itemFileData = { dataUrl: e.target.result, type: file.type.startsWith('image/') ? 'image' : 'video' };
+        if (preview) {
+          preview.style.display = 'block';
+          if (file.type.startsWith('image/')) {
+            preview.innerHTML = `<img src="${e.target.result}" style="max-height:100px;border-radius:8px;">`;
+          } else {
+            preview.innerHTML = `<span style="font-size:12px;">🎬 ${this.escapeHtml(file.name)}</span>`;
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // PDF or other: can't upload without backend — show reminder
+      this._itemFileData = null;
+      if (preview) { preview.style.display = 'block'; preview.innerHTML = `<span style="font-size:12px;color:var(--color-text-tertiary);">📎 ${this.escapeHtml(file.name)} — PDF는 URL을 입력해주세요</span>`; }
+    }
+  },
+
   addItemDialog(type) {
     this.currentItemType = type;
+    this._itemFileData = null;
     document.getElementById('itemFormArea').classList.remove('hidden');
     document.getElementById('itemContentGroup').classList.remove('hidden');
     document.getElementById('itemUrlGroup').classList.add('hidden');
     document.getElementById('itemFileGroup').classList.add('hidden');
     if (type === 'youtube' || type === 'link') document.getElementById('itemUrlGroup').classList.remove('hidden');
-    if (type === 'image' || type === 'video' || type === 'pdf' || type === 'file') document.getElementById('itemFileGroup').classList.remove('hidden');
+    if (type === 'media' || type === 'image' || type === 'video' || type === 'pdf') {
+      document.getElementById('itemFileGroup').classList.remove('hidden');
+      const label = document.getElementById('itemFileLabel');
+      const preview = document.getElementById('itemFilePreview');
+      if (label) label.textContent = '📎 파일 선택';
+      if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+      // For PDF, only URL is practical
+      const accept = (type === 'pdf') ? '.pdf,application/*' : 'image/*,video/*';
+      const fi = document.getElementById('itemFileInput');
+      if (fi) fi.accept = accept;
+    }
     document.getElementById('itemTitleInput').value = '';
     document.getElementById('itemContentInput').value = '';
     document.getElementById('itemUrlInput').value = '';
+    const fu = document.getElementById('itemFileUrl');
+    if (fu) fu.value = '';
     document.getElementById('itemTitleInput').focus();
   },
 
   cancelItemForm() {
     document.getElementById('itemFormArea').classList.add('hidden');
     this.currentItemType = null;
+    this._itemFileData = null;
   },
 
   saveItem() {
     const title = document.getElementById('itemTitleInput').value.trim();
     if (!title) { this.toast(I18N.t('item.title') + '!'); return; }
+
+    // Determine actual type (media → image or video based on file)
+    let actualType = this.currentItemType;
+    if (actualType === 'media') actualType = (this._itemFileData?.type === 'video') ? 'video' : 'image';
+
+    // Get file_url: prefer uploaded data URL, then manual URL field, then original url field
+    const fileUrlInput = document.getElementById('itemFileUrl');
+    let file_url = (this._itemFileData?.dataUrl) || (fileUrlInput?.value.trim()) || document.getElementById('itemUrlInput').value.trim();
+
     this.createState.items.push({
       id: DataStore.generateId('itm'),
-      type: this.currentItemType, title,
+      type: actualType, title,
       content: document.getElementById('itemContentInput').value.trim(),
-      file_url: document.getElementById('itemUrlInput').value.trim(),
+      file_url,
       order: this.createState.items.length + 1
     });
     this.cancelItemForm();
@@ -1671,26 +1756,36 @@ const App = {
       </div>`;
   },
 
-  adminCreateUser() {
+  async adminCreateUser() {
     const name = document.getElementById('newUserName').value.trim();
     const school_id = document.getElementById('newUserSchool').value;
     const role = document.getElementById('newUserRole').value;
-    const code = document.getElementById('newUserCode').value.trim();
+    const code = document.getElementById('newUserCode').value.trim().toUpperCase();
     const errEl = document.getElementById('newUserError');
 
-    if (!name || !code) {
-      errEl.classList.add('show');
-      return;
-    }
+    if (!name || !code) { errEl.classList.add('show'); return; }
     errEl.classList.remove('show');
 
-    DataStore.createManagedUser({ name, school_id, role, code });
+    try {
+      const saved = await API.createUser({ name, school_id, role, code });
+      // Also persist in localStorage with the GAS-generated id
+      const existing = DataStore.getManagedUsers();
+      if (!existing.find(u => u.id === saved.id)) {
+        const users = existing;
+        users.push({ id: saved.id, name, school_id, role, code, created_at: saved.created_at || new Date().toISOString() });
+        DataStore.saveManagedUsers(users);
+      }
+    } catch(e) {
+      // Fallback: save locally only
+      DataStore.createManagedUser({ name, school_id, role, code });
+    }
     this.adminTab('users');
     this.toast('✅ 계정이 생성되었습니다.');
   },
 
-  adminDeleteUser(id) {
+  async adminDeleteUser(id) {
     if (!confirm('이 계정을 삭제하시겠습니까?')) return;
+    try { await API.deleteUser(id); } catch(e) { /* local-only fallback */ }
     DataStore.deleteManagedUser(id);
     this.adminTab('users');
     this.toast('🗑️ 계정이 삭제되었습니다.');

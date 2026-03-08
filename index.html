@@ -324,8 +324,7 @@
             <h3>🎁 아이템 추가</h3>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('text')">📝 텍스트</button>
-              <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('image')">🖼️ 이미지</button>
-              <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('video')">🎬 영상</button>
+              <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('media')">🖼️ 이미지/영상</button>
               <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('youtube')">▶️ 유튜브</button>
               <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('link')">🔗 링크</button>
               <button class="btn btn--secondary btn--sm" onclick="App.addItemDialog('pdf')">📄 PDF</button>
@@ -345,11 +344,16 @@
               <input class="form-input" id="itemUrlInput" placeholder="https://...">
             </div>
             <div class="form-group hidden" id="itemFileGroup">
-              <label class="form-label">파일 업로드</label>
-              <div class="file-upload" id="itemFileUpload">
-                <div class="file-upload__icon">📎</div>
-                <div class="file-upload__text">클릭하거나 드래그하여 업로드</div>
+              <label class="form-label">파일 / URL</label>
+              <div class="item-file-row">
+                <label class="item-file-label">
+                  <span id="itemFileLabel">📎 파일 선택</span>
+                  <input type="file" id="itemFileInput" accept="image/*,video/*,.pdf" class="hidden" onchange="App.handleItemFile(event)">
+                </label>
+                <span style="font-size:12px;color:var(--color-text-tertiary);">또는</span>
+                <input class="form-input" id="itemFileUrl" placeholder="이미지·영상·PDF URL (https://...)" style="flex:1;">
               </div>
+              <div id="itemFilePreview" style="margin-top:8px;display:none;"></div>
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
               <button class="btn btn--ghost btn--sm" onclick="App.cancelItemForm()">취소</button>

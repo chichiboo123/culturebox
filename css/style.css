@@ -1354,6 +1354,28 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 .file-upload__icon { font-size: 40px; margin-bottom: var(--space-sm); opacity: 0.5; }
 .file-upload__text { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
 
+/* Item file upload row */
+.item-file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.item-file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s;
+}
+.item-file-label:hover { border-color: var(--color-primary); background: rgba(217,119,6,0.04); }
+
 /* =========================================
    PACKING & SENDING SCENES
    ========================================= */
@@ -2790,6 +2812,33 @@ body { transition: background-color 0.3s ease; }
   opacity: 1;
 }
 
+/* Translation language picker popup */
+.translate-picker {
+  display: inline-flex;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  margin: 4px 0;
+  flex-wrap: nowrap;
+}
+.translate-picker button {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+  transition: background 0.12s;
+}
+.translate-picker button:hover {
+  background: var(--color-surface-warm);
+}
+
 .item-comment__translate {
   font-size: 11px;
   color: var(--color-primary);
@@ -2964,6 +3013,23 @@ body { transition: background-color 0.3s ease; }
   align-items: center;
   gap: 2px;
   margin-left: auto;
+}
+
+/* Corner buttons — absolute top-right of card/comment */
+.social-post__corner-actions,
+.social-comment__corner-actions {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  gap: 2px;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.social-post:hover .social-post__corner-actions,
+.social-comment:hover .social-comment__corner-actions {
+  opacity: 1;
 }
 
 .social-owner-btn {

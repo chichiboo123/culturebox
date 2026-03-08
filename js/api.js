@@ -83,6 +83,19 @@ const API = {
   // Local data handlers (prototype mode)
   _localHandler(action, params) {
     switch (action) {
+      case 'getUsers':
+        return Promise.resolve(DataStore.getManagedUsers());
+
+      case 'createUser': {
+        const u = DataStore.createManagedUser({ name: params.name, school_id: params.school_id, role: params.role, code: params.code });
+        return Promise.resolve(u);
+      }
+
+      case 'deleteUser': {
+        DataStore.deleteManagedUser(params.id);
+        return Promise.resolve(true);
+      }
+
       case 'getSchools':
         return Promise.resolve(DataStore.schools);
 
@@ -252,6 +265,9 @@ const API = {
   },
 
   // Public API methods
+  getUsers: () => API._fetch('getUsers'),
+  createUser: (data) => API._fetch('createUser', data),
+  deleteUser: (id) => API._fetch('deleteUser', { id }),
   getSchools: () => API._fetch('getSchools'),
   createSchool: (data) => API._fetch('createSchool', data),
   deleteSchool: (id) => API._fetch('deleteSchool', { id }),

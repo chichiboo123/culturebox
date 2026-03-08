@@ -192,6 +192,29 @@ function doGet(e) {
         });
       }
 
+      case 'getUsers':
+        return jsonResponse(sheetToArray('Users'));
+
+      case 'createUser': {
+        const uid = generateId('usr');
+        const user = {
+          id: uid,
+          school_id: e.parameter.school_id || '',
+          role: e.parameter.role || '',
+          name: e.parameter.name || '',
+          email: e.parameter.code || '',
+          lang_pref: '',
+          created_at: new Date().toISOString()
+        };
+        appendRow('Users', user);
+        return jsonResponse({ ...user, code: e.parameter.code || '' });
+      }
+
+      case 'deleteUser': {
+        deleteRow('Users', e.parameter.id);
+        return jsonResponse(true);
+      }
+
       case 'createSchool': {
         const id = generateId('sch');
         const school = {
